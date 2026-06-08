@@ -1,7 +1,7 @@
 #pragma once
 
-#include "public.h"
-#include "LogEvent.h"
+#include "logger/public.h"
+#include "logger/LogEvent.h"
 
 #include <string>
 #include <memory>

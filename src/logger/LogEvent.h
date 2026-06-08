@@ -1,6 +1,6 @@
 #pragma once
 
-#include "public.h"
+#include "logger/public.h"
 
 #include <string>
 #include <chrono>

@@ -1,4 +1,4 @@
-#include "LogEvent.h"
+#include "logger/LogEvent.h"
 #include "utils/os.h"
 
 #include <thread>
@@ -15,7 +15,7 @@ namespace logger
                            std::string_view logger_name,
                            LogLevel lvl,
                            std::string_view msg)
-            : logger_name(logger_name), level(lvl), time(log_time), thread_id(utils::os::thread_id()), filename(filename), line(line), funcname(funcname), payload(msg)
+            : logger_name(logger_name), level(lvl), time(log_time), thread_id(utils::thread_id()), filename(filename), line(line), funcname(funcname), payload(msg)
         {
         }
 

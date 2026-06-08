@@ -18,6 +18,8 @@
 # add_executable(fmt_test test.cc)
 # target_link_libraries(fmt_test PRIVATE fmt::fmt)
 
-add_subdirectory(logger)
+add_executable(formatter_test formatter_test.cc)
+target_link_libraries(formatter_test PUBLIC csj_log)
 
-
+add_executable(stdout_log_sink_test stdout_log_sink_test.cc)
+target_link_libraries(stdout_log_sink_test PUBLIC csj_log)

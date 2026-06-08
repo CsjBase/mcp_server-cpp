@@ -1,0 +1,62 @@
+# Build directory
+build/
+!build/.gitkeep
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+Makefile
+
+# Compiled binaries
+*.out
+*.exe
+*.app
+*.dylib
+*.so
+*.a
+*.o
+*.obj
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# vcpkg
+vcpkg_installed/
+.vcpkg/
+
+# Test results
+Testing/
+test_detail.xml
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.cache
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini

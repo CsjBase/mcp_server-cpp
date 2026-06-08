@@ -3,6 +3,8 @@
 #include <fmt/format.h>
 #include <string>
 
+#include "utils/null_mutex.h"
+
 #define LOG_LEVEL_TRACE 0
 #define LOG_LEVEL_DEBUG 1
 #define LOG_LEVEL_INFO 2
@@ -41,6 +43,12 @@ namespace logger
     };
     const std::string_view &to_string_view(const LogLevel &l);
     LogLevel from_str(const std::string &name);
+
+#if defined(LOG_NO_ATOMIC_LEVEL)
+    using level_t = utils::null_atomic<LogLevel>;
+#else
+    using level_t = std::atomic<LogLevel>;
+#endif
 
     using memory_buf_t = fmt::basic_memory_buffer<char, 250>;
 
