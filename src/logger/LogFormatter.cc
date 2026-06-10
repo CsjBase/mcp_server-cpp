@@ -422,7 +422,9 @@ namespace logger
                 items_.push_back(std::make_unique<CharFormatItem>(' '));
                 // [%l]
                 items_.push_back(std::make_unique<CharFormatItem>('['));
+                items_.push_back(std::make_unique<ColorStartFormatItem>());
                 items_.push_back(std::make_unique<LevelFormatItem>());
+                items_.push_back(std::make_unique<ColorEndFormatItem>());
                 items_.push_back(std::make_unique<CharFormatItem>(']'));
                 items_.push_back(std::make_unique<CharFormatItem>(' '));
                 // [%s:%#]

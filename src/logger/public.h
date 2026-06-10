@@ -16,16 +16,16 @@
 #define LOG_LEVEL_NAME_TRACE std::string_view("trace", 5)
 #define LOG_LEVEL_NAME_DEBUG std::string_view("debug", 5)
 #define LOG_LEVEL_NAME_INFO std::string_view("info", 4)
-#define LOG_LEVEL_NAME_WARNING std::string_view("warning", 7)
+#define LOG_LEVEL_NAME_WARNING std::string_view("warn", 4)
 #define LOG_LEVEL_NAME_ERROR std::string_view("error", 5)
-#define LOG_LEVEL_NAME_CRITICAL std::string_view("critical", 8)
+#define LOG_LEVEL_NAME_FATAL std::string_view("fatal", 5)
 #define LOG_LEVEL_NAME_OFF std::string_view("off", 3)
 
 #if !defined(LOG_LEVEL_NAMES)
-#define LOG_LEVEL_NAMES                                                        \
-    {                                                                          \
-        LOG_LEVEL_NAME_TRACE, LOG_LEVEL_NAME_DEBUG, LOG_LEVEL_NAME_INFO,       \
-        LOG_LEVEL_NAME_WARNING, LOG_LEVEL_NAME_ERROR, LOG_LEVEL_NAME_CRITICAL, \
+#define LOG_LEVEL_NAMES                                                     \
+    {                                                                       \
+        LOG_LEVEL_NAME_TRACE, LOG_LEVEL_NAME_DEBUG, LOG_LEVEL_NAME_INFO,    \
+        LOG_LEVEL_NAME_WARNING, LOG_LEVEL_NAME_ERROR, LOG_LEVEL_NAME_FATAL, \
         LOG_LEVEL_NAME_OFF}
 #endif
 
@@ -39,7 +39,8 @@ namespace logger
         Warn = LOG_LEVEL_WARN,
         Error = LOG_LEVEL_ERROR,
         Fatal = LOG_LEVEL_FATAL,
-        Off = LOG_LEVEL_OFF
+        Off = LOG_LEVEL_OFF,
+        LevelCount
     };
     const std::string_view &to_string_view(const LogLevel &l);
     LogLevel from_str(const std::string &name);
