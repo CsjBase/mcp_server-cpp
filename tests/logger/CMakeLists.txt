@@ -26,3 +26,6 @@ target_link_libraries(stdout_log_sink_test PUBLIC csj_log)
 
 add_executable(color_log_sink_test color_log_sink_test.cc)
 target_link_libraries(color_log_sink_test PUBLIC csj_log)
+
+add_executable(basic_file_log_sink_test basic_file_log_sink_test.cc)
+target_link_libraries(basic_file_log_sink_test PUBLIC csj_log)

@@ -53,4 +53,39 @@ namespace logger
 
     using memory_buf_t = fmt::basic_memory_buffer<char, 250>;
 
+    class LogException : public std::exception
+    {
+    public:
+        explicit LogException(std::string msg);
+        LogException(std::string msg, int last_errno);
+        const char *what() const noexcept override;
+
+    private:
+        std::string msg_;
+    };
+
+    class FileHelper
+    {
+    public:
+        FileHelper() = default;
+        ~FileHelper();
+
+        FileHelper(const FileHelper &) = delete;
+        FileHelper &operator=(const FileHelper &) = delete;
+
+        void open(const std::string &fname, bool truncate = false);
+        void reopen(bool truncate);
+        void flush();
+        void sync();
+        void close();
+        void write(const memory_buf_t &buf);
+        size_t size() const;
+        const std::string &filename() const;
+
+    private:
+        const int open_tries_ = 5;
+        const unsigned int open_interval_ = 10;
+        std::FILE *fd_{nullptr};
+        std::string filename_;
+    };
 }
