@@ -29,3 +29,6 @@ target_link_libraries(color_log_sink_test PUBLIC csj_log)
 
 add_executable(basic_file_log_sink_test basic_file_log_sink_test.cc)
 target_link_libraries(basic_file_log_sink_test PUBLIC csj_log)
+
+add_executable(rotating_file_log_sink_test rotating_file_log_sink_test.cc)
+target_link_libraries(rotating_file_log_sink_test PUBLIC csj_log)

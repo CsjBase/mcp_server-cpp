@@ -18,6 +18,9 @@
 # add_executable(fmt_test test.cc)
 # target_link_libraries(fmt_test PRIVATE fmt::fmt)
 
+
 add_subdirectory(logger)
 
+add_executable(ctest test.cc)
+target_link_libraries(ctest PUBLIC csj_log)
 

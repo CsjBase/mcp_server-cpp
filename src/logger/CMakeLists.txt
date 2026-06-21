@@ -1,4 +1,4 @@
-file(GLOB LOG_SRC "${CMAKE_CURRENT_SOURCE_DIR}/*.cc")
+file(GLOB LOG_SRC "${CMAKE_CURRENT_SOURCE_DIR}/*.cc" "${CMAKE_CURRENT_SOURCE_DIR}/sinks/*.cc")
 
 add_library(csj_log STATIC ${LOG_SRC})
 
