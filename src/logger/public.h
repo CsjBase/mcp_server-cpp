@@ -81,6 +81,7 @@ namespace logger
         void write(const memory_buf_t &buf);
         size_t size() const;
         const std::string &filename() const;
+        static std::tuple<std::string, std::string> split_by_extension(const std::string &fname);
 
     private:
         const int open_tries_ = 5;

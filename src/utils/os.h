@@ -15,6 +15,7 @@ namespace utils
     bool path_exists(const std::string &filename) noexcept;
     std::string dir_name(const std::string &path);
     bool mkdir(const std::string &path);
+    bool remove_if_exists(const std::string &path) noexcept;
 
     void sleep_for_millis(unsigned int millis);
 }

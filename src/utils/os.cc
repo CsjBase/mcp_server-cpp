@@ -79,6 +79,11 @@ namespace utils
         return true;
     }
 
+    bool remove_if_exists(const std::string &path) noexcept
+    {
+        return path_exists(path) ? ::remove(path.c_str()) == 0 : true;
+    }
+
     void sleep_for_millis(unsigned int millis)
     {
         ::usleep(millis * 1000);

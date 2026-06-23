@@ -66,22 +66,8 @@ namespace logger
     template <typename Mutex>
     std::string RotatingFileLogSink<Mutex>::calc_filename(const std::string &filename, size_t index)
     {
-        if (index == 0U)
-        {
-            return filename;
-        }
-        auto ext_index = filename.rfind(".");
-        if (ext_index == std::string::npos || ext_index == 0 || ext_index == filename.size() - 1)
-        {
-            return filename;
-        }
-        auto folder_index = filename.find_last_of("/");
-        if (folder_index != std::string::npos && folder_index >= ext_index - 1)
-        {
-            return filename;
-        }
-        std::string basename = filename.substr(0, ext_index);
-        std::string ext = filename.substr(ext_index);
+        std::string basename, ext;
+        std::tie(basename, ext) = FileHelper::split_by_extension(filename);
         return fmt::format("{}_{}{}", basename, index, ext);
     }
 
@@ -162,6 +148,10 @@ namespace logger
         file_helper_.flush();
     }
 
+    // max_files_ = 3
+    // 1. file_name_2.ext -> file_name_3.ext
+    // 2. file_name_1.ext -> file_name_2.ext
+    // 3. file_name.ext -> file_name_1.ext
     template <typename Mutex>
     void RotatingFileLogSink<Mutex>::rotate_()
     {

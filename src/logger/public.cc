@@ -158,4 +158,24 @@ namespace logger
     {
         return filename_;
     }
+
+    std::tuple<std::string, std::string> FileHelper::split_by_extension(const std::string &fname)
+    {
+        auto ext_index = fname.rfind('.');
+
+        if (ext_index == std::string::npos || ext_index == 0 || ext_index == fname.size() - 1)
+        {
+            return std::make_tuple(fname, std::string());
+        }
+
+        // treat cases like "/etc/rc.d/somelogfile or "/abc/.hiddenfile"
+        auto folder_index = fname.find_last_of("/");
+        if (folder_index != std::string::npos && folder_index >= ext_index - 1)
+        {
+            return std::make_tuple(fname, std::string());
+        }
+
+        // finally - return a valid base and extension tuple
+        return std::make_tuple(fname.substr(0, ext_index), fname.substr(ext_index));
+    }
 }
