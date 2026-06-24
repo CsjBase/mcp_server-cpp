@@ -175,6 +175,7 @@ namespace logger
                 throw LogException("DailyFileLogSink: Failed to delete old log file:" + old_filename, errno);
             }
         }
+        filenames_q_.push_back(std::move(current_filename));
     }
 
     using DailyFileLogSinkMT = DailyFileLogSink<std::mutex>;
