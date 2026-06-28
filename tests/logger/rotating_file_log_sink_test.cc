@@ -12,7 +12,7 @@ void test_MT()
     for (int i = 0; i < 10000; ++i)
     {
         std::string msg = "test stdout Multi-Thread sink msg " + std::to_string(i);
-        details::LogEvent event(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Trace, msg);
+        details::LogEvent event(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Trace, msg);
         sink_mt.log(event);
     }
 }
@@ -23,7 +23,7 @@ void test_ST()
     for (int i = 0; i < 10000; ++i)
     {
         std::string msg = "test stdout Single-Thread sink msg " + std::to_string(i);
-        details::LogEvent event(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Trace, msg);
+        details::LogEvent event(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Trace, msg);
         sink.log(event);
     }
 }

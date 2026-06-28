@@ -313,7 +313,10 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{}", event.line);
+                if (event.source.line > 0)
+                {
+                    fmt::format_to(std::back_inserter(dest), "{}", event.source.line);
+                }
             }
         };
 
@@ -323,7 +326,10 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &, memory_buf_t &dest) override
             {
-                dest.append(std::string_view(event.filename));
+                if (event.source.filename != nullptr)
+                {
+                    dest.append(std::string_view(event.source.filename));
+                }
             }
         };
 
@@ -343,7 +349,10 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &, memory_buf_t &dest) override
             {
-                dest.append(std::string_view(event.funcname));
+                if (event.source.funcname != nullptr)
+                {
+                    dest.append(std::string_view(event.source.funcname));
+                }
             }
         };
 
@@ -398,53 +407,100 @@ namespace logger
         public:
             DefaultLogFormatItem()
             {
-                // [%Y-%m-%d %H:%M:%S.%e]
-                items_.push_back(std::make_unique<CharFormatItem>('['));
-                items_.push_back(std::make_unique<YearFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>('-'));
-                items_.push_back(std::make_unique<MonthNumberFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>('-'));
-                items_.push_back(std::make_unique<DayFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>(' '));
-                items_.push_back(std::make_unique<Hours24FormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>(':'));
-                items_.push_back(std::make_unique<MinutesFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>(':'));
-                items_.push_back(std::make_unique<SecondsFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>('.'));
-                items_.push_back(std::make_unique<MillisecondsFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>(']'));
-                items_.push_back(std::make_unique<CharFormatItem>(' '));
-                // [%n]
-                items_.push_back(std::make_unique<CharFormatItem>('['));
-                items_.push_back(std::make_unique<LoggerNameFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>(']'));
-                items_.push_back(std::make_unique<CharFormatItem>(' '));
-                // [%l]
-                items_.push_back(std::make_unique<CharFormatItem>('['));
-                items_.push_back(std::make_unique<ColorStartFormatItem>());
-                items_.push_back(std::make_unique<LevelFormatItem>());
-                items_.push_back(std::make_unique<ColorEndFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>(']'));
-                items_.push_back(std::make_unique<CharFormatItem>(' '));
-                // [%s:%#]
-                items_.push_back(std::make_unique<CharFormatItem>('['));
-                items_.push_back(std::make_unique<SourceFileFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>(':'));
-                items_.push_back(std::make_unique<SourceLineFormatItem>());
-                items_.push_back(std::make_unique<CharFormatItem>(']'));
-                items_.push_back(std::make_unique<CharFormatItem>(' '));
-                // %v
-                items_.push_back(std::make_unique<PayloadFormatItem>());
+                // // [%Y-%m-%d %H:%M:%S.%e]
+                // items_.push_back(std::make_unique<CharFormatItem>('['));
+                // items_.push_back(std::make_unique<YearFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>('-'));
+                // items_.push_back(std::make_unique<MonthNumberFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>('-'));
+                // items_.push_back(std::make_unique<DayFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>(' '));
+                // items_.push_back(std::make_unique<Hours24FormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>(':'));
+                // items_.push_back(std::make_unique<MinutesFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>(':'));
+                // items_.push_back(std::make_unique<SecondsFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>('.'));
+                // items_.push_back(std::make_unique<MillisecondsFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>(']'));
+                // items_.push_back(std::make_unique<CharFormatItem>(' '));
+                // // [%n]
+                // items_.push_back(std::make_unique<CharFormatItem>('['));
+                // items_.push_back(std::make_unique<LoggerNameFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>(']'));
+                // items_.push_back(std::make_unique<CharFormatItem>(' '));
+                // // [%l]
+                // items_.push_back(std::make_unique<CharFormatItem>('['));
+                // items_.push_back(std::make_unique<ColorStartFormatItem>());
+                // items_.push_back(std::make_unique<LevelFormatItem>());
+                // items_.push_back(std::make_unique<ColorEndFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>(']'));
+                // items_.push_back(std::make_unique<CharFormatItem>(' '));
+                // // [%s:%#]
+                // items_.push_back(std::make_unique<CharFormatItem>('['));
+                // items_.push_back(std::make_unique<SourceFileFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>(':'));
+                // items_.push_back(std::make_unique<SourceLineFormatItem>());
+                // items_.push_back(std::make_unique<CharFormatItem>(']'));
+                // items_.push_back(std::make_unique<CharFormatItem>(' '));
+                // // %v
+                // items_.push_back(std::make_unique<PayloadFormatItem>());
             }
             void format(const LogEvent &event, const std::tm &tm_time, memory_buf_t &dest) override
             {
-                for (auto &item : items_)
-                    item->format(event, tm_time, dest);
+
+                // [%Y-%m-%d %H:%M:%S.%e]
+                dest.push_back('[');
+                fmt::format_to(std::back_inserter(dest), "{}", tm_time.tm_year + 1900);
+                dest.push_back('-');
+                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_mon + 1);
+                dest.push_back('-');
+                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_mday);
+                dest.push_back(' ');
+                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_hour);
+                dest.push_back(':');
+                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_min);
+                dest.push_back(':');
+                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_sec);
+                dest.push_back('.');
+                auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              event.time.time_since_epoch())
+                              .count() %
+                          1000;
+                fmt::format_to(std::back_inserter(dest), "{}", ms);
+                dest.push_back(']');
+                dest.push_back(' ');
+                // [%n]
+                if (event.logger_name.size() > 0)
+                {
+                    dest.push_back('[');
+                    dest.append(event.logger_name);
+                    dest.push_back(']');
+                    dest.push_back(' ');
+                }
+                // [%l]
+                dest.push_back('[');
+                event.color_range_start = dest.size();
+                dest.append(logger::to_string_view(event.level));
+                event.color_range_end = dest.size();
+                dest.push_back(']');
+                dest.push_back(' ');
+                // [%s:%#]
+                if (!event.source.empty())
+                {
+                    dest.push_back('[');
+                    dest.append(std::string_view(event.source.filename));
+                    dest.push_back(':');
+                    fmt::format_to(std::back_inserter(dest), "{}", event.source.line);
+                    dest.push_back(']');
+                    dest.push_back(' ');
+                }
+                // %v
+                dest.append(event.payload);
             }
 
         private:
-            std::vector<std::unique_ptr<LogFormatItem>> items_;
+            // std::vector<std::unique_ptr<LogFormatItem>> items_;
         };
         //
         class StringFormatItem final : public LogFormatItem
@@ -655,12 +711,12 @@ namespace logger
         need_time_ = true;
     }
 
-    // std::unique_ptr<LogFormatter> LogFormatter::clone() const
-    // {
-    //     auto cloned = std::make_unique<LogFormatter>(pattern_, eol_);
-    //     cloned->need_time_ = this->need_time_;
-    //     return cloned;
-    // }
+    std::unique_ptr<LogFormatter> LogFormatter::clone() const
+    {
+        auto cloned = std::make_unique<LogFormatter>(pattern_, eol_);
+        cloned->need_time_ = this->need_time_;
+        return cloned;
+    }
     void LogFormatter::format(const details::LogEvent &event, memory_buf_t &dest)
     {
         if (need_time_)

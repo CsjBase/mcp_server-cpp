@@ -13,7 +13,7 @@ void test_MT()
     for (int i = 0; i < 10000; ++i)
     {
         std::string msg = "test daily file Multi-Thread sink msg " + std::to_string(i);
-        details::LogEvent event(time, __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Trace, msg);
+        details::LogEvent event(time, details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Trace, msg);
         sink_mt.log(event);
         time += std::chrono::minutes(1);
     }
@@ -26,7 +26,7 @@ void test_ST()
     for (int i = 0; i < 10000; ++i)
     {
         std::string msg = "test daily file Single-Thread sink msg " + std::to_string(i);
-        details::LogEvent event(time, __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Trace, msg);
+        details::LogEvent event(time, details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Trace, msg);
         sink.log(event);
         time += std::chrono::minutes(1);
     }

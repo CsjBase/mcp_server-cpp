@@ -20,6 +20,11 @@ void DailyFile_calc_filename()
     std::cout << logger::DailyFileLogSink<utils::null_mutex>::calc_filename("/a/.log", logger::DailyFileLogSink<utils::null_mutex>::now_tm(now)) << std::endl;
 }
 
+void testCircularQueue()
+{
+    utils::circular_q<int> q(5);
+}
+
 int main()
 {
     // testRotatingFile_calc_filename();

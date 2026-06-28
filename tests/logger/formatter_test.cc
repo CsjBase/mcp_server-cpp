@@ -6,7 +6,7 @@ using namespace logger;
 
 int main(int argc, char **argv)
 {
-    details::LogEvent event(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Trace, "test msg");
+    details::LogEvent event(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Trace, "test msg");
 
     LogFormatter formatter;
     memory_buf_t dest;

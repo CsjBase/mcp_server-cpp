@@ -29,7 +29,7 @@ namespace logger
         LogFormatter();
         LogFormatter(const LogFormatter &other) = delete;
         LogFormatter &operator=(const LogFormatter &other) = delete;
-        // std::unique_ptr<LogFormatter> clone() const;
+        std::unique_ptr<LogFormatter> clone() const;
         void format(const details::LogEvent &event, memory_buf_t &dest);
         void set_pattern(std::string pattern);
 

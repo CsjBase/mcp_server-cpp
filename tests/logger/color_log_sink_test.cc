@@ -13,12 +13,12 @@ void test_MT()
     for (int i = 0; i < 10; ++i)
     {
         std::string msg = "test stdout Multi-Thread sink msg " + std::to_string(i);
-        details::LogEvent event1(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Trace, msg);
-        details::LogEvent event2(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Debug, msg);
-        details::LogEvent event3(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Info, msg);
-        details::LogEvent event4(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Warn, msg);
-        details::LogEvent event5(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Error, msg);
-        details::LogEvent event6(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Fatal, msg);
+        details::LogEvent event1(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Trace, msg);
+        details::LogEvent event2(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Debug, msg);
+        details::LogEvent event3(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Info, msg);
+        details::LogEvent event4(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Warn, msg);
+        details::LogEvent event5(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Error, msg);
+        details::LogEvent event6(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Fatal, msg);
         sink.log(event1);
         sink.log(event2);
         sink.log(event3);
@@ -33,12 +33,12 @@ void test_ST()
     for (int i = 0; i < 10; ++i)
     {
         std::string msg = "test stdout Single-Thread sink msg " + std::to_string(i);
-        details::LogEvent event1(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Trace, msg);
-        details::LogEvent event2(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Debug, msg);
-        details::LogEvent event3(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Info, msg);
-        details::LogEvent event4(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Warn, msg);
-        details::LogEvent event5(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Error, msg);
-        details::LogEvent event6(std::chrono::system_clock::now(), __FILE_NAME__, __LINE__, __FUNCTION__, "test", LogLevel::Fatal, msg);
+        details::LogEvent event1(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Trace, msg);
+        details::LogEvent event2(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Debug, msg);
+        details::LogEvent event3(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Info, msg);
+        details::LogEvent event4(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Warn, msg);
+        details::LogEvent event5(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Error, msg);
+        details::LogEvent event6(std::chrono::system_clock::now(), details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Fatal, msg);
         sink.log(event1);
         sink.log(event2);
         sink.log(event3);
