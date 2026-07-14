@@ -6,14 +6,36 @@
 #include <string>
 #include <vector>
 #include <fmt/format.h>
+#include <functional>
 
 #include "logger/sinks/LogSink.h"
+
+#define LOGGER_TRY try
+#define LOGGER_CATCH(event)                                                     \
+    catch (const std::exception &ex)                                            \
+    {                                                                           \
+        if (event.source.filename)                                              \
+        {                                                                       \
+            handle_err_(fmt::format(FMT_STRING("{} [{}({})]"), ex.what(),       \
+                                    event.source.filename, event.source.line)); \
+        }                                                                       \
+        else                                                                    \
+        {                                                                       \
+            handle_err_(ex.what());                                             \
+        }                                                                       \
+    }                                                                           \
+    catch (...)                                                                 \
+    {                                                                           \
+        handle_err_("Rethrowing unknown exception in logger");                  \
+        throw;                                                                  \
+    }
 
 namespace logger
 {
     class Logger
     {
     public:
+        using ErrHandler = std::function<void(const std::string &err_msg)>;
         explicit Logger(std::string name)
             : name_(std::move(name))
         {
@@ -50,8 +72,9 @@ namespace logger
         void set_formatter(std::unique_ptr<LogFormatter> formatter);
         void set_pattern(const std::string &pattern);
         void flush();
-        void flush_on(LogLevel level);
+        void set_flush_level(LogLevel level);
         LogLevel flush_level() const;
+        void set_error_handler(ErrHandler handler);
 
         template <typename... Args>
         void log(LogLevel lvl, fmt::format_string<Args...> fmt, Args &&...args)
@@ -68,14 +91,15 @@ namespace logger
             std::string msg = fmt::format(fmt, std::forward<Args>(args)...);
             details::LogEvent event(std::chrono::system_clock::now(), loc, name_, lvl, msg);
 
-            for (auto &sink : sinks_)
-            {
-                if (sink->should_log(lvl))
-                    sink->log(event);
-            }
+            sink_it_(event);
+            // for (auto &sink : sinks_)
+            // {
+            //     if (sink->should_log(lvl))
+            //         sink->log(event);
+            // }
 
-            if (lvl >= flush_level_.load(std::memory_order_relaxed))
-                flush();
+            // if (lvl >= flush_level_.load(std::memory_order_relaxed))
+            //     flush();
         }
 
         template <typename... Args>
@@ -110,9 +134,15 @@ namespace logger
         }
 
     protected:
+        virtual void sink_it_(const details::LogEvent &event);
+        virtual void flush_();
+        void handle_err_(const std::string &msg);
+
+    protected:
         std::string name_;
         std::vector<std::shared_ptr<LogSink>> sinks_;
         std::atomic<LogLevel> level_{LogLevel::Info};
         std::atomic<LogLevel> flush_level_{LogLevel::Off};
+        ErrHandler err_handler_{nullptr};
     };
 }

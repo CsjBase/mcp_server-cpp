@@ -1,7 +1,11 @@
 #include "logger/Logger.h"
+#include "logger/sinks/BasicFileLogSink.h"
 #include "logger/sinks/ColorLogSink.h"
 
 using namespace logger;
+
+#define SRC_LOCATION \
+    details::SourceLocation { __FILE_NAME__, __LINE__, __FUNCTION__ }
 
 int main()
 {
@@ -15,12 +19,13 @@ int main()
     logger.trace("this is a trace message");
     logger.flush();
 
-    logger.set_level(LogLevel::Off);
-    logger.debug("this message should not be logged");
-    logger.info("this message should not be logged");
-    logger.warn("this message should not be logged");
-    logger.error("this message should not be logged");
-    logger.fatal("this message should not be logged");
-    logger.trace("this message should not be logged");
-    logger.flush();
+    for (int i = 0; i < 10; i++)
+    {
+        logger.debug("this is a debug message {}", i);
+    }
+
+    for (int i = 0; i < 10; i++)
+    {
+        logger.log(SRC_LOCATION, LogLevel::Debug, "this is a debug message {}", i);
+    }
 }

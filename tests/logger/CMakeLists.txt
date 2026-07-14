@@ -39,4 +39,7 @@ target_link_libraries(daily_file_log_sink_test PUBLIC csj_log)
 add_executable(logger_test logger_test.cc)
 target_link_libraries(logger_test PUBLIC csj_log)
 
+add_executable(async_logger_test async_logger_test.cc)
+target_link_libraries(async_logger_test PUBLIC csj_log)
+
 
