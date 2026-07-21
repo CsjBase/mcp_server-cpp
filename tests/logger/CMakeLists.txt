@@ -42,4 +42,6 @@ target_link_libraries(logger_test PUBLIC csj_log)
 add_executable(async_logger_test async_logger_test.cc)
 target_link_libraries(async_logger_test PUBLIC csj_log)
 
+add_executable(logger_manager_test logger_manager_test.cc)
+target_link_libraries(logger_manager_test PUBLIC csj_log)
 

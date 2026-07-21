@@ -11,7 +11,7 @@ namespace logger
         DiscardNew,
         DiscardOldest
     };
-    class AsyncLogger : public Logger, public std::enable_shared_from_this<AsyncLogger>
+    class AsyncLogger final : public Logger, public std::enable_shared_from_this<AsyncLogger>
     {
     public:
         friend class ThreadPool;
