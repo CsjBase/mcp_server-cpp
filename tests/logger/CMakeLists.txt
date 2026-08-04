@@ -1,3 +1,5 @@
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/tests/logger)
+
 # file(GLOB TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/*.cc")
 
 #if(TEST_SRC)
@@ -44,4 +46,18 @@ target_link_libraries(async_logger_test PUBLIC csj_log)
 
 add_executable(logger_manager_test logger_manager_test.cc)
 target_link_libraries(logger_manager_test PUBLIC csj_log)
+
+add_executable(rotating_file_sink_handler_test rotating_file_sink_handler_test.cc)
+target_link_libraries(rotating_file_sink_handler_test PRIVATE csj_log csj_utils GTest::gtest GTest::gtest_main)
+
+add_executable(daily_file_sink_handler_test daily_file_sink_handler_test.cc)
+target_link_libraries(daily_file_sink_handler_test PRIVATE csj_log csj_utils GTest::gtest GTest::gtest_main)
+
+add_executable(log_tool_test log_tool_test.cc)
+target_link_libraries(log_tool_test PRIVATE csj_log csj_utils GTest::gtest GTest::gtest_main)
+
+include(GoogleTest)
+gtest_discover_tests(rotating_file_sink_handler_test)
+gtest_discover_tests(daily_file_sink_handler_test)
+gtest_discover_tests(log_tool_test)
 

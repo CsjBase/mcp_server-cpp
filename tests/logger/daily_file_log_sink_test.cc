@@ -1,40 +1,71 @@
 #include "logger/sinks/DailyFileLogSink.h"
+#include "logger/handlers/RotatedFileHandler.h"
+#include "logger/handlers/CompressHandler.h"
+#include "logger/handlers/EncryptHandler.h"
+#include "utils/aes_crypt.h"
+#include "utils/zlib_compress.h"
 
 #include <chrono>
 #include <thread>
 
 using namespace logger;
+using namespace utils;
 
 DailyFileLogSinkMT sink_mt("../../../logs/test_daily_file_sink_mt.log", 0, 0, true, 5);
 
 void test_MT()
 {
-    auto time = std::chrono::system_clock::now();
-    for (int i = 0; i < 10000; ++i)
+    auto now = std::chrono::system_clock::now();
+    for (int day = 0; day < 7; ++day)
     {
-        std::string msg = "test daily file Multi-Thread sink msg " + std::to_string(i);
-        details::LogEvent event(time, details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Trace, msg);
+        auto t = now + std::chrono::hours(24 * day);
+        std::string msg = "test daily file Multi-Thread sink msg ";
+        details::LogEvent event(t,
+                                details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__},
+                                "test", LogLevel::Trace, msg);
         sink_mt.log(event);
-        time += std::chrono::minutes(1);
     }
 }
+
 void test_ST()
 {
-
-    auto time = std::chrono::system_clock::now();
+    auto now = std::chrono::system_clock::now();
     DailyFileLogSinkST sink("../../../logs/test_daily_file_sink_st.log", 0, 0, true, 5);
-    for (int i = 0; i < 10000; ++i)
+
+    for (int day = 0; day < 7; ++day)
     {
-        std::string msg = "test daily file Single-Thread sink msg " + std::to_string(i);
-        details::LogEvent event(time, details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__}, "test", LogLevel::Trace, msg);
+        auto t = now + std::chrono::hours(24 * day);
+        std::string msg = "test daily file Single-Thread sink msg ";
+        details::LogEvent event(t,
+                                details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__},
+                                "test", LogLevel::Trace, msg);
         sink.log(event);
-        time += std::chrono::minutes(1);
+    }
+}
+
+void test_ST_handler()
+{
+    auto now = std::chrono::system_clock::now();
+    std::unique_ptr<CompositeHandler> handler = std::make_unique<CompositeHandler>();
+    handler->add(std::make_unique<CompressHandler>(std::make_unique<ZlibCompress>()));
+    handler->add(std::make_unique<EncryptHandler>(std::make_unique<AesCrypt>("test_key")));
+    DailyFileLogSinkST sink("../../../logs/test_daily_file_sink_st_handler.log", 0, 0, true, 5, std::move(handler));
+
+    for (int day = 0; day < 7; ++day)
+    {
+        auto t = now + std::chrono::hours(24 * day);
+        std::string msg = "test daily file Single-Thread sink msg ";
+        details::LogEvent event(t,
+                                details::SourceLocation{__FILE_NAME__, __LINE__, __FUNCTION__},
+                                "test", LogLevel::Trace, msg);
+        sink.log(event);
     }
 }
 
 int main(int argc, char **argv)
 {
     test_ST();
+    test_ST_handler();
 
     std::string pattern = "[%Y-%m-%d %H:%M:%S.%e] [%t] [%n] [%l] [%s:%#] %v";
     sink_mt.set_pattern(pattern);

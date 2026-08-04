@@ -1,5 +1,6 @@
 #pragma once
 
+#include "logger/handlers/RotatedFileHandler.h"
 #include "logger/sinks/BaseLogSink.h"
 #include "utils/os.h"
 
@@ -13,7 +14,9 @@ namespace logger
     {
     public:
         static constexpr size_t kMaxFiles = 200000;
-        RotatingFileLogSink(std::string base_filename, size_t max_size, size_t max_files, bool rotate_on_open = false);
+        RotatingFileLogSink(std::string base_filename, size_t max_size, size_t max_files,
+                            bool rotate_on_open = false,
+                            std::unique_ptr<RotatedFileHandler> handler = nullptr);
         static std::string calc_filename(const std::string &filename, size_t index);
         std::string filename();
         void rotate_now();
@@ -28,21 +31,34 @@ namespace logger
 
     private:
         void rotate_();
+
+        /// Shift files matching `suffix` up by one: base_{i-1}.log{suffix} -> base_i.log{suffix}
+        /// Skips non-existent sources. Retries once on failure.
+        void rename_chain_(const std::string &suffix);
+
+        /// rename_file_ with one retry, throws on failure
+        void rename_with_retry_(const std::string &src, const std::string &dst);
+
         bool rename_file_(const std::string &src_filename, const std::string &target_filename);
 
+    private:
         std::string base_filename_;
         size_t max_size_;
         size_t max_files_;
         size_t current_size_;
         FileHelper file_helper_;
+        std::unique_ptr<RotatedFileHandler> handler_;
     };
 
     template <typename Mutex>
-    RotatingFileLogSink<Mutex>::RotatingFileLogSink(std::string base_filename, size_t max_size, size_t max_files, bool rotate_on_open)
+    RotatingFileLogSink<Mutex>::RotatingFileLogSink(std::string base_filename, size_t max_size, size_t max_files,
+                                                    bool rotate_on_open,
+                                                    std::unique_ptr<RotatedFileHandler> handler)
         : base_filename_(std::move(base_filename)),
           max_size_(max_size),
           max_files_(max_files),
-          current_size_(0)
+          current_size_(0),
+          handler_(std::move(handler))
     {
         if (max_files_ == 0)
         {
@@ -66,6 +82,10 @@ namespace logger
     template <typename Mutex>
     std::string RotatingFileLogSink<Mutex>::calc_filename(const std::string &filename, size_t index)
     {
+        if (index == 0U)
+        {
+            return filename;
+        }
         std::string basename, ext;
         std::tie(basename, ext) = FileHelper::split_by_extension(filename);
         return fmt::format("{}_{}{}", basename, index, ext);
@@ -148,34 +168,62 @@ namespace logger
         file_helper_.flush();
     }
 
-    // max_files_ = 3
-    // 1. file_name_2.ext -> file_name_3.ext
-    // 2. file_name_1.ext -> file_name_2.ext
-    // 3. file_name.ext -> file_name_1.ext
+    // max_files_ = 3, handler with suffix ".gz.enc":
+    // Processed file chain: base_2.log.suffix -> base_3.log.suffix (evicted)
+    //                       base_1.log.suffix -> base_2.log.suffix
+    // Active file:          base.log          -> base_1.log
+    //                       handler->handle("base_1.log") -> base_1.log.suffix
     template <typename Mutex>
     void RotatingFileLogSink<Mutex>::rotate_()
     {
         file_helper_.close();
+
+        if (handler_)
+        {
+            rename_chain_(handler_->suffix());
+
+            auto active = calc_filename(base_filename_, 0);
+            auto rotated = calc_filename(base_filename_, 1);
+            rename_with_retry_(active, rotated);
+
+            handler_->handle(rotated);
+        }
+        else
+        {
+            rename_chain_("");
+        }
+
+        file_helper_.reopen(true);
+    }
+
+    template <typename Mutex>
+    void RotatingFileLogSink<Mutex>::rename_chain_(const std::string &suffix)
+    {
         for (size_t index = max_files_; index > 0; --index)
         {
-            auto src_filename = calc_filename(base_filename_, index - 1);
-            if (!utils::path_exists(src_filename))
-            {
+            auto src = calc_filename(base_filename_, index - 1) + suffix;
+            if (!utils::path_exists(src))
                 continue;
-            }
-            auto target_filename = calc_filename(base_filename_, index);
-            if (!rename_file_(src_filename, target_filename))
+            auto dst = calc_filename(base_filename_, index) + suffix;
+            rename_with_retry_(src, dst);
+        }
+    }
+
+    template <typename Mutex>
+    void RotatingFileLogSink<Mutex>::rename_with_retry_(const std::string &src,
+                                                        const std::string &dst)
+    {
+        if (!rename_file_(src, dst))
+        {
+            utils::sleep_for_millis(100);
+            if (!rename_file_(src, dst))
             {
-                utils::sleep_for_millis(100);
-                if (!rename_file_(src_filename, target_filename))
-                {
-                    file_helper_.reopen(true);
-                    current_size_ = 0;
-                    throw LogException("rotating_file_sink: failed renaming " + src_filename + " to " + target_filename, errno);
-                }
+                file_helper_.reopen(true);
+                current_size_ = 0;
+                throw LogException(
+                    "rotating_file_sink: failed renaming " + src + " to " + dst, errno);
             }
         }
-        file_helper_.reopen(true);
     }
 
     template <typename Mutex>

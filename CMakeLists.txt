@@ -3,9 +3,13 @@ project(McpServer VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 find_package(GTest REQUIRED)
 find_package(fmt REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 add_subdirectory(src)
 
@@ -13,3 +17,4 @@ enable_testing()
 add_subdirectory(tests)
 
 add_subdirectory(examples)
+add_subdirectory(tools)

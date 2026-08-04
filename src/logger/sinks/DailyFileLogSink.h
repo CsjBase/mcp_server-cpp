@@ -1,5 +1,6 @@
 #pragma once
 
+#include "logger/handlers/RotatedFileHandler.h"
 #include "logger/sinks/BaseLogSink.h"
 #include "utils/os.h"
 #include "utils/circular_q.h"
@@ -17,7 +18,8 @@ namespace logger
                          int rotation_hour = 0,
                          int rotation_minute = 0,
                          bool truncate = false,
-                         uint16_t max_files = 0);
+                         uint16_t max_files = 0,
+                         std::unique_ptr<RotatedFileHandler> handler = nullptr);
 
         std::string filename();
         static std::string calc_filename(const std::string &filename, const tm &now_tm);
@@ -41,6 +43,7 @@ namespace logger
         bool truncate_;
         uint16_t max_files_;
         utils::circular_q<std::string> filenames_q_;
+        std::unique_ptr<RotatedFileHandler> handler_;
     };
 
     template <typename Mutex>
@@ -48,12 +51,14 @@ namespace logger
                                               int rotation_hour,
                                               int rotation_minute,
                                               bool truncate,
-                                              uint16_t max_files)
+                                              uint16_t max_files,
+                                              std::unique_ptr<RotatedFileHandler> handler)
         : base_filename_(base_filename),
           rotation_h_(rotation_hour),
           rotation_m_(rotation_minute),
           truncate_(truncate),
-          max_files_(max_files)
+          max_files_(max_files),
+          handler_(std::move(handler))
     {
         if (rotation_h_ > 23 || rotation_h_ < 0 || rotation_m_ > 59 || rotation_m_ < 0)
         {
@@ -83,9 +88,15 @@ namespace logger
         bool should_rotate = event.time >= rotation_tp_;
         if (should_rotate)
         {
+            auto old_filename = file_helper_.filename();
             const auto new_filename = calc_filename(base_filename_, now_tm(event.time));
             file_helper_.open(new_filename, truncate_);
             rotation_tp_ = next_rotation_tp_();
+
+            if (handler_ && !old_filename.empty())
+            {
+                handler_->handle(old_filename);
+            }
         }
         memory_buf_t formatted;
         BaseLogSink<Mutex>::formatter_->format(event, formatted);
@@ -130,28 +141,36 @@ namespace logger
         data.tm_hour = rotation_h_;
         data.tm_min = rotation_m_;
         data.tm_sec = 0;
-        auto retation_time = std::chrono::system_clock::from_time_t(std::mktime(&data));
-        if (retation_time > now)
+        auto rotation_time = std::chrono::system_clock::from_time_t(std::mktime(&data));
+        if (rotation_time > now)
         {
-            return retation_time;
+            return rotation_time;
         }
-        return {retation_time + std::chrono::hours(24)};
+        return {rotation_time + std::chrono::hours(24)};
     }
 
     template <typename Mutex>
     void DailyFileLogSink<Mutex>::init_filename_q_()
     {
         filenames_q_ = utils::circular_q<std::string>(max_files_);
+        auto suffix = handler_ ? handler_->suffix() : std::string{};
         std::vector<std::string> filenames;
         auto now = std::chrono::system_clock::now();
         while (filenames.size() < max_files_)
         {
             const auto new_filename = calc_filename(base_filename_, now_tm(now));
-            if (!utils::path_exists(new_filename))
+            if (utils::path_exists(new_filename + suffix))
+            {
+                filenames.emplace_back(new_filename);
+            }
+            else if (utils::path_exists(new_filename))
+            {
+                filenames.emplace_back(new_filename);
+            }
+            else
             {
                 break;
             }
-            filenames.emplace_back(new_filename);
             now -= std::chrono::hours(24);
         }
         for (auto &filename : filenames)
@@ -168,7 +187,18 @@ namespace logger
         {
             auto old_filename = std::move(filenames_q_.front());
             filenames_q_.pop_front();
-            bool deleted = utils::remove_if_exists(old_filename);
+
+            // Try with handler suffix first, then without
+            bool deleted = false;
+            if (handler_)
+            {
+                deleted = utils::remove_if_exists(old_filename + handler_->suffix());
+            }
+            if (!deleted)
+            {
+                deleted = utils::remove_if_exists(old_filename);
+            }
+
             if (!deleted)
             {
                 filenames_q_.push_back(std::move(current_filename));
