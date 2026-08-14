@@ -1,4 +1,4 @@
-#include "logger/handlers/EncryptHandler.h"
+#include "logger/rotater/EncryptHandler.h"
 #include "utils/aes_crypt.h"
 
 #include <fstream>

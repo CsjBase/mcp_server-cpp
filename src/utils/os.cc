@@ -84,6 +84,12 @@ namespace utils
         return path_exists(path) ? ::remove(path.c_str()) == 0 : true;
     }
 
+    bool rename_file(const std::string &src_filename, const std::string &target_filename)
+    {
+        std::remove(target_filename.c_str());
+        return std::rename(src_filename.c_str(), target_filename.c_str()) == 0;
+    }
+
     void sleep_for_millis(unsigned int millis)
     {
         ::usleep(millis * 1000);

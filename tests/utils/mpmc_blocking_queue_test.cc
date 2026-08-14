@@ -19,6 +19,7 @@ TEST(MpmcBlockingQueueTest, DefaultCtor)
     EXPECT_FALSE(q.full());
     EXPECT_EQ(q.size(), 0);
     EXPECT_EQ(q.overrun_counter(), 0);
+    EXPECT_EQ(q.discard_counter(), 0);
 }
 
 // ---- sized construction ----
@@ -28,6 +29,8 @@ TEST(MpmcBlockingQueueTest, SizedCtor)
     EXPECT_TRUE(q.empty());
     EXPECT_FALSE(q.full());
     EXPECT_EQ(q.size(), 0);
+    EXPECT_EQ(q.overrun_counter(), 0);
+    EXPECT_EQ(q.discard_counter(), 0);
 }
 
 // ---- basic enqueue / dequeue (blocking) ----
@@ -43,10 +46,10 @@ TEST(MpmcBlockingQueueTest, EnqueueDequeue)
     q.enqueue(30);
     EXPECT_EQ(q.size(), 3);
 
-    EXPECT_EQ(q.dequeue(), 10);
+    EXPECT_EQ(*q.dequeue(), 10);
     EXPECT_EQ(q.size(), 2);
-    EXPECT_EQ(q.dequeue(), 20);
-    EXPECT_EQ(q.dequeue(), 30);
+    EXPECT_EQ(*q.dequeue(), 20);
+    EXPECT_EQ(*q.dequeue(), 30);
     EXPECT_TRUE(q.empty());
 }
 
@@ -58,8 +61,8 @@ TEST(MpmcBlockingQueueTest, EnqueueRvalue)
     q.enqueue(std::string("hello"));
     q.enqueue(std::string("world"));
 
-    EXPECT_EQ(q.dequeue(), "hello");
-    EXPECT_EQ(q.dequeue(), "world");
+    EXPECT_EQ(*q.dequeue(), "hello");
+    EXPECT_EQ(*q.dequeue(), "world");
 }
 
 // ---- enqueue_overwrite: overwrites oldest when full ----
@@ -78,18 +81,18 @@ TEST(MpmcBlockingQueueTest, EnqueueOverwrite)
     EXPECT_TRUE(q.full());
     EXPECT_EQ(q.size(), 3);
     EXPECT_EQ(q.overrun_counter(), 1);
-    EXPECT_EQ(q.dequeue(), 2); // 1 was overwritten
-    EXPECT_EQ(q.dequeue(), 3);
-    EXPECT_EQ(q.dequeue(), 4);
+    EXPECT_EQ(*q.dequeue(), 2); // 1 was overwritten
+    EXPECT_EQ(*q.dequeue(), 3);
+    EXPECT_EQ(*q.dequeue(), 4);
 
     q.enqueue_overwrite(5);
     q.enqueue_overwrite(6);
     q.enqueue_overwrite(7);
     q.enqueue_overwrite(8);            // overwrites 5
     EXPECT_EQ(q.overrun_counter(), 2); // 1st overwrite + 2nd overwrite = 2
-    EXPECT_EQ(q.dequeue(), 6);
-    EXPECT_EQ(q.dequeue(), 7);
-    EXPECT_EQ(q.dequeue(), 8);
+    EXPECT_EQ(*q.dequeue(), 6);
+    EXPECT_EQ(*q.dequeue(), 7);
+    EXPECT_EQ(*q.dequeue(), 8);
 }
 
 // ---- try_enqueue succeeds when not full ----
@@ -112,8 +115,8 @@ TEST(MpmcBlockingQueueTest, TryEnqueueFull)
     q.enqueue(2);
     EXPECT_FALSE(q.try_enqueue(3));
     EXPECT_EQ(q.size(), 2);
-    EXPECT_EQ(q.dequeue(), 1);
-    EXPECT_EQ(q.dequeue(), 2);
+    EXPECT_EQ(*q.dequeue(), 1);
+    EXPECT_EQ(*q.dequeue(), 2);
 }
 
 // ---- try_dequeue succeeds when not empty ----
@@ -201,8 +204,8 @@ TEST(MpmcBlockingQueueTest, EnqueueBlocksUntilSpace)
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
     EXPECT_TRUE(enqueued.load()); // producer has enqueued 3, queue now [2, 3]
 
-    EXPECT_EQ(q.dequeue(), 2);
-    EXPECT_EQ(q.dequeue(), 3);
+    EXPECT_EQ(*q.dequeue(), 2);
+    EXPECT_EQ(*q.dequeue(), 3);
 
     producer.join();
 }
@@ -217,7 +220,7 @@ TEST(MpmcBlockingQueueTest, DequeueBlocksUntilItem)
 
     std::thread consumer([&q, &result, &dequeued]
                          {
-        result.store(q.dequeue());
+        result.store(*q.dequeue());
         dequeued.store(true); });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
@@ -308,7 +311,7 @@ TEST(MpmcBlockingQueueTest, DiscardCounterIndependentFromOverrun)
     EXPECT_EQ(q.overrun_counter(), 0);
 
     // enqueue_overwrite increments overrun_counter, not discard_counter
-    q.enqueue_overwrite(4); // overwrites 1
+    q.enqueue_overwrite(4);            // overwrites 1
     EXPECT_EQ(q.discard_counter(), 1); // unchanged
     EXPECT_EQ(q.overrun_counter(), 1);
 }
@@ -330,9 +333,9 @@ TEST(MpmcBlockingQueueTest, UniquePtrType)
     q.enqueue(std::make_unique<int>(100));
     q.enqueue(std::make_unique<int>(200));
 
-    auto p1 = q.dequeue();
+    auto p1 = std::move(*q.dequeue());
     EXPECT_EQ(*p1, 100);
-    auto p2 = q.dequeue();
+    auto p2 = std::move(*q.dequeue());
     EXPECT_EQ(*p2, 200);
 }
 
@@ -345,7 +348,7 @@ TEST(MpmcBlockingQueueTest, CopyEnqueue)
     q.enqueue(s);
     s = "changed";
 
-    auto v = q.dequeue();
+    auto v = *q.dequeue();
     EXPECT_EQ(v, "unchanged");
 }
 
@@ -361,7 +364,7 @@ TEST(MpmcBlockingQueueTest, FillAndDrain)
     EXPECT_EQ(q.size(), 8);
 
     for (int i = 0; i < 8; ++i)
-        EXPECT_EQ(q.dequeue(), i);
+        EXPECT_EQ(*q.dequeue(), i);
 
     EXPECT_TRUE(q.empty());
 }
@@ -417,7 +420,7 @@ TEST(MpmcBlockingQueueTest, MpmcStress)
                                {
             for (int i = 0; i < kItemsPerProducer; ++i)
             {
-                sum.fetch_add(q.dequeue());
+                sum.fetch_add(*q.dequeue());
                 consumed_count.fetch_add(1);
             } });
     }
@@ -479,5 +482,180 @@ TEST(MpmcBlockingQueueTest, SingleElementQueue)
     q.enqueue(43);
 
     consumer.join();
-    EXPECT_EQ(q.dequeue(), 43);
+    EXPECT_EQ(*q.dequeue(), 43);
+}
+
+// ==================== 中断模式测试 ====================
+
+// ---- enqueue returns bool ----
+TEST(MpmcBlockingQueueTest, EnqueueReturnsBool)
+{
+    mpmc_blocking_queue<int> q(2);
+    EXPECT_TRUE(q.enqueue(1));
+    EXPECT_TRUE(q.enqueue(2));
+}
+
+// ---- enqueue returns false after stop_gracefully ----
+TEST(MpmcBlockingQueueTest, EnqueueFailsAfterStopGracefully)
+{
+    mpmc_blocking_queue<int> q(2);
+    q.stop_gracefully();
+    EXPECT_FALSE(q.enqueue(1));
+}
+
+// ---- enqueue returns false after stop_immediately ----
+TEST(MpmcBlockingQueueTest, EnqueueFailsAfterStopImmediately)
+{
+    mpmc_blocking_queue<int> q(2);
+    q.stop_immediately();
+    EXPECT_FALSE(q.enqueue(1));
+}
+
+// ---- enqueue_overwrite returns false after stop ----
+TEST(MpmcBlockingQueueTest, EnqueueOverwriteFailsAfterStop)
+{
+    mpmc_blocking_queue<int> q(3);
+    q.stop_gracefully();
+    EXPECT_FALSE(q.enqueue_overwrite(1));
+}
+
+// ---- try_enqueue returns false after stop (full queue + stop) ----
+TEST(MpmcBlockingQueueTest, TryEnqueueFailsAfterStop)
+{
+    mpmc_blocking_queue<int> q(2);
+    q.enqueue(1);
+    q.enqueue(2);
+    q.stop_gracefully();
+    EXPECT_FALSE(q.try_enqueue(3));
+}
+
+// ---- stop_gracefully: dequeue drains remaining items, then returns nullopt ----
+TEST(MpmcBlockingQueueTest, StopGracefullyDrainsThenNullopt)
+{
+    mpmc_blocking_queue<int> q(4);
+
+    q.enqueue(10);
+    q.enqueue(20);
+    q.enqueue(30);
+    EXPECT_EQ(q.size(), 3);
+
+    q.stop_gracefully();
+
+    // 应排空已有数据
+    auto v1 = q.dequeue();
+    ASSERT_TRUE(v1.has_value());
+    EXPECT_EQ(*v1, 10);
+
+    auto v2 = q.dequeue();
+    ASSERT_TRUE(v2.has_value());
+    EXPECT_EQ(*v2, 20);
+
+    auto v3 = q.dequeue();
+    ASSERT_TRUE(v3.has_value());
+    EXPECT_EQ(*v3, 30);
+
+    // 排空后返回 nullopt
+    auto v4 = q.dequeue();
+    EXPECT_FALSE(v4.has_value());
+}
+
+// ---- stop_immediately: dequeue returns nullopt, skipping remaining items ----
+TEST(MpmcBlockingQueueTest, StopImmediatelySkipsData)
+{
+    mpmc_blocking_queue<int> q(4);
+
+    q.enqueue(10);
+    q.enqueue(20);
+    q.enqueue(30);
+
+    q.stop_immediately();
+
+    auto v = q.dequeue();
+    EXPECT_FALSE(v.has_value()); // 立即返回 nullopt，不排空
+}
+
+// ---- stop_gracefully wakes blocked dequeue ----
+TEST(MpmcBlockingQueueTest, StopGracefullyWakesBlockedDequeue)
+{
+    mpmc_blocking_queue<int> q(2);
+
+    std::atomic<bool> woken{false};
+    std::thread consumer([&q, &woken]
+                         {
+                             auto v = q.dequeue();
+                             woken.store(!v.has_value()); // 应被中断唤醒，返回 nullopt
+                         });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    q.stop_gracefully();
+
+    consumer.join();
+    EXPECT_TRUE(woken.load());
+}
+
+// ---- stop_immediately wakes blocked dequeue ----
+TEST(MpmcBlockingQueueTest, StopImmediatelyWakesBlockedDequeue)
+{
+    mpmc_blocking_queue<int> q(2);
+
+    std::atomic<bool> woken{false};
+    std::thread consumer([&q, &woken]
+                         {
+        auto v = q.dequeue();
+        woken.store(!v.has_value()); });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    q.stop_immediately();
+
+    consumer.join();
+    EXPECT_TRUE(woken.load());
+}
+
+// ---- stop wakes blocked enqueue ----
+TEST(MpmcBlockingQueueTest, StopWakesBlockedEnqueue)
+{
+    mpmc_blocking_queue<int> q(1);
+
+    q.enqueue(1); // full
+
+    std::atomic<bool> woken{false};
+    std::thread producer([&q, &woken]
+                         {
+        bool ok = q.enqueue(2); // blocks until stop
+        woken.store(!ok); }); // should return false due to stop
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    q.stop_gracefully();
+
+    producer.join();
+    EXPECT_TRUE(woken.load());
+}
+
+// ---- dequeue_for with stop_gracefully drains then returns nullopt ----
+TEST(MpmcBlockingQueueTest, DequeueForStopGracefully)
+{
+    mpmc_blocking_queue<int> q(3);
+
+    q.enqueue(100);
+    q.stop_gracefully();
+
+    auto v = q.dequeue_for(std::chrono::milliseconds(500));
+    ASSERT_TRUE(v.has_value());
+    EXPECT_EQ(*v, 100);
+
+    auto v2 = q.dequeue_for(std::chrono::milliseconds(10));
+    EXPECT_FALSE(v2.has_value());
+}
+
+// ---- dequeue_for with stop_immediately returns nullopt ----
+TEST(MpmcBlockingQueueTest, DequeueForStopImmediately)
+{
+    mpmc_blocking_queue<int> q(3);
+
+    q.enqueue(100);
+    q.enqueue(200);
+    q.stop_immediately();
+
+    auto v = q.dequeue_for(std::chrono::milliseconds(10));
+    EXPECT_FALSE(v.has_value());
 }

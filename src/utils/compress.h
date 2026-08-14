@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 namespace utils
@@ -17,5 +18,7 @@ namespace utils
         virtual std::string decompress(const void *data, size_t size) = 0;
 
         virtual void reset_stream() = 0;
+
+        virtual std::unique_ptr<Compress> clone() const = 0;
     };
 }

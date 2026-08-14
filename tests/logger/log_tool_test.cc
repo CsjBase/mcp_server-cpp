@@ -1,5 +1,5 @@
-#include "logger/handlers/CompressHandler.h"
-#include "logger/handlers/EncryptHandler.h"
+#include "logger/rotater/CompressHandler.h"
+#include "logger/rotater/EncryptHandler.h"
 #include "logger/public.h"
 #include "utils/aes_crypt.h"
 #include "utils/zlib_compress.h"

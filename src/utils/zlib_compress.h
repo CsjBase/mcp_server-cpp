@@ -42,6 +42,11 @@ namespace utils
 
         size_t compressed_bound(size_t input_size) override;
 
+        std::unique_ptr<Compress> clone() const override
+        {
+            return std::make_unique<ZlibCompress>();
+        }
+
     private:
         void reset_uncompress_stream_();
 

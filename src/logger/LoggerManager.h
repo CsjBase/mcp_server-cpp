@@ -1,7 +1,7 @@
 #pragma once
 
 #include "logger/Logger.h"
-#include "logger/ThreadPool.h"
+#include "utils/thread_pool.h"
 
 #include <mutex>
 
@@ -21,7 +21,7 @@ namespace logger
         std::shared_ptr<Logger> get_default_logger();
 
         void set_default_logger(std::shared_ptr<Logger> logger);
-        void set_thread_pool(std::shared_ptr<ThreadPool> pool);
+        void set_thread_pool(std::shared_ptr<utils::ThreadPool> pool);
 
     private:
         LoggerManager();
@@ -33,6 +33,6 @@ namespace logger
 
         std::unordered_map<std::string, std::shared_ptr<Logger>> logger_map_;
 
-        std::shared_ptr<ThreadPool> thread_pool_;
+        std::shared_ptr<utils::ThreadPool> thread_pool_;
     };
 }

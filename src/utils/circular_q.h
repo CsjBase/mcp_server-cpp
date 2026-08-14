@@ -17,15 +17,16 @@ namespace utils
         circular_q(circular_q &&other) noexcept;
 
         void push_back(T &&item);
+
         const T &front() const;
         T &front();
-
         void pop_front();
 
         bool empty() const;
         bool full() const;
 
         size_t size() const;
+        size_t capacity() const;
         size_t overrun_counter() const noexcept { return overrun_counter_; }
         void reset_overrun_counter() { overrun_counter_ = 0; }
 
@@ -103,5 +104,11 @@ namespace utils
         {
             return max_items_ - head_ + tail_;
         }
+    }
+
+    template <typename T>
+    size_t circular_q<T>::capacity() const
+    {
+        return max_items_ - 1;
     }
 }

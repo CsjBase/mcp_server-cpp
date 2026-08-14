@@ -22,6 +22,11 @@ namespace utils
         size_t encrypt_bound(size_t input_size) override;
         void reset() override;
 
+        std::unique_ptr<Crypt> clone() const override
+        {
+            return std::make_unique<AesCrypt>(user_key_);
+        }
+
         static constexpr int kIvLen = 12;
         static constexpr int kTagLen = 16;
 
@@ -34,6 +39,7 @@ namespace utils
                           unsigned char *out, size_t out_size, size_t &out_len,
                           const unsigned char *iv, const unsigned char *tag);
 
+        std::string user_key_;
         std::string derived_key_;
         std::unique_ptr<unsigned char[]> iv_;
         bool iv_generated_ = false;

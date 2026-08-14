@@ -59,7 +59,7 @@ namespace logger
         std::lock_guard<std::mutex> lock(mutex_);
         default_logger_ = std::move(logger);
     }
-    void LoggerManager::set_thread_pool(std::shared_ptr<ThreadPool> pool)
+    void LoggerManager::set_thread_pool(std::shared_ptr<utils::ThreadPool> pool)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         thread_pool_ = std::move(pool);

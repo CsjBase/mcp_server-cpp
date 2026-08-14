@@ -1,6 +1,6 @@
 #include "logger/AsyncLogger.h"
 #include "logger/sinks/BasicFileLogSink.h"
-#include "logger/ThreadPool.h"
+#include "utils/thread_pool.h"
 
 #include "utils/os.h"
 
@@ -11,7 +11,7 @@ using namespace logger;
 
 void test_async_logger()
 {
-    auto tp = std::make_shared<ThreadPool>(1024, 1);
+    auto tp = std::make_shared<utils::ThreadPool>(1, 1024);
     auto async_logger = std::make_shared<AsyncLogger>("test", std::make_shared<BasicFileLogSinkMT>("../../../logs/test_async_logger.log"), tp);
     async_logger->set_level(LogLevel::Debug);
     async_logger->debug("this is a debug message");

@@ -2,6 +2,9 @@
 build/
 !build/.gitkeep
 
+# Binary directory
+bin/
+
 # CMake generated files
 CMakeCache.txt
 CMakeFiles/

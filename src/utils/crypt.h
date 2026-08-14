@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 
 namespace utils
 {
@@ -25,6 +26,8 @@ namespace utils
 
         /// 重置加密状态（生成新 IV / Nonce）
         virtual void reset() = 0;
+
+        virtual std::unique_ptr<Crypt> clone() const = 0;
     };
 
 } // namespace utils
