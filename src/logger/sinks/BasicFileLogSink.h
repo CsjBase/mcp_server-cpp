@@ -1,6 +1,7 @@
 #pragma once
 
 #include "logger/sinks/BaseLogSink.h"
+#include "logger/SynchronousFactory.h"
 
 namespace logger
 {
@@ -56,4 +57,16 @@ namespace logger
 
     using BasicFileLogSinkMT = BasicFileLogSink<std::mutex>;
     using BasicFileLogSinkST = BasicFileLogSink<utils::null_mutex>;
+
+    template <typename Factory = SynchronousFactory>
+    std::shared_ptr<Logger> create_basic_file_mt_logger(const std::string &logger_name, std::string file_path, bool truncate = false)
+    {
+        return Factory::template create<BasicFileLogSinkMT>(logger_name, file_path, truncate);
+    }
+
+    template <typename Factory = SynchronousFactory>
+    std::shared_ptr<Logger> create_basic_file_st_logger(const std::string &logger_name, std::string file_path, bool truncate = false)
+    {
+        return Factory::template create<BasicFileLogSinkST>(logger_name, file_path, truncate);
+    }
 }

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "utils/compress.h"
 
 #include <zlib.h>

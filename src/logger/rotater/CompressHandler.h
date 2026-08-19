@@ -2,6 +2,7 @@
 
 #include "logger/rotater/RotatedFileHandler.h"
 #include "utils/compress.h"
+#include "utils/zlib_compress.h"
 
 #include <memory>
 
@@ -27,5 +28,7 @@ namespace logger
     private:
         std::unique_ptr<utils::Compress> compressor_;
     };
+
+    std::unique_ptr<RotatedFileHandler> create_compress_handler(std::unique_ptr<utils::Compress> compressor = std::make_unique<utils::ZlibCompress>());
 
 } // namespace logger

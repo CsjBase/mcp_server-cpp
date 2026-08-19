@@ -3,6 +3,7 @@
 #include "logger/sinks/LogSink.h"
 #include "utils/os.h"
 #include "logger/sinks/ConsoleMutex.h"
+#include "logger/SynchronousFactory.h"
 
 namespace logger
 {
@@ -90,5 +91,29 @@ namespace logger
 
     using StdoutLogSinkST = StdoutLogSink<ConsoleNullMutex>;
     using StderrLogSinkST = StderrLogSink<ConsoleNullMutex>;
+
+    template <typename Factory = SynchronousFactory>
+    inline std::shared_ptr<Logger> create_stdout_mt_logger(const std::string &logger_name)
+    {
+        return Factory::template create<StdoutLogSinkMT>(logger_name);
+    }
+
+    template <typename Factory = SynchronousFactory>
+    inline std::shared_ptr<Logger> create_stdout_st_logger(const std::string &logger_name)
+    {
+        return Factory::template create<StdoutLogSinkST>(logger_name);
+    }
+
+    template <typename Factory = SynchronousFactory>
+    inline std::shared_ptr<Logger> create_stderr_mt_logger(const std::string &logger_name)
+    {
+        return Factory::template create<StderrLogSinkMT>(logger_name);
+    }
+
+    template <typename Factory = SynchronousFactory>
+    inline std::shared_ptr<Logger> create_stderr_st_logger(const std::string &logger_name)
+    {
+        return Factory::template create<StderrLogSinkST>(logger_name);
+    }
 
 } // namespace logger

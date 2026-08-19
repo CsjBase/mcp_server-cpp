@@ -4,7 +4,12 @@
 
 namespace logger
 {
-    std::unique_ptr<utils::ThreadPool> RotationStrategy::rotating_thread_pool_ = std::make_unique<utils::ThreadPool>(1, 256);
+    namespace details
+    {
+        static const size_t default_rotatin_task_q_size = 256;
+    }
+    std::unique_ptr<utils::ThreadPool> RotationStrategy::rotating_thread_pool_ =
+        std::make_unique<utils::ThreadPool>(1, details::default_rotatin_task_q_size);
 
     void SizeBasedRotation::rotate(const std::string &)
     {

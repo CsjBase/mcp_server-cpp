@@ -41,4 +41,9 @@ namespace logger
         return copy;
     }
 
+    std::unique_ptr<RotatedFileHandler> create_composite_handler(std::vector<std::unique_ptr<RotatedFileHandler>> chain)
+    {
+        return std::make_unique<CompositeHandler>(std::move(chain));
+    }
+
 } // namespace logger

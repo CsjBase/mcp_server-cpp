@@ -61,4 +61,9 @@ namespace logger
         return out_path;
     }
 
+    std::unique_ptr<RotatedFileHandler> create_compress_handler(std::unique_ptr<utils::Compress> compressor)
+    {
+        return std::make_unique<CompressHandler>(std::move(compressor));
+    }
+
 } // namespace logger

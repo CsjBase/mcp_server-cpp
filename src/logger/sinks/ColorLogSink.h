@@ -3,6 +3,7 @@
 #include "logger/sinks/LogSink.h"
 #include "utils/os.h"
 #include "logger/sinks/ConsoleMutex.h"
+#include "logger/SynchronousFactory.h"
 
 #include <array>
 
@@ -174,4 +175,29 @@ namespace logger
 
     using StderrColorLogSinkMT = StderrColorLogSink<ConsoleMutex>;
     using StderrColorLogSinkST = StderrColorLogSink<ConsoleNullMutex>;
+
+    template <typename Factory = SynchronousFactory>
+    inline std::shared_ptr<Logger> create_stdout_color_mt_logger(const std::string &logger_name)
+    {
+        return Factory::template create<StdoutColorLogSinkMT>(logger_name);
+    }
+
+    template <typename Factory = SynchronousFactory>
+    inline std::shared_ptr<Logger> create_stdout_color_st_logger(const std::string &logger_name)
+    {
+        return Factory::template create<StdoutColorLogSinkST>(logger_name);
+    }
+
+    template <typename Factory = SynchronousFactory>
+    inline std::shared_ptr<Logger> create_stderr_color_mt_logger(const std::string &logger_name)
+    {
+        return Factory::template create<StderrColorLogSinkMT>(logger_name);
+    }
+
+    template <typename Factory = SynchronousFactory>
+    inline std::shared_ptr<Logger> create_stderr_color_st_logger(const std::string &logger_name)
+    {
+        return Factory::template create<StderrColorLogSinkST>(logger_name);
+    }
+
 }

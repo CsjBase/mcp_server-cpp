@@ -74,4 +74,9 @@ namespace logger
         return out_path;
     }
 
+    std::unique_ptr<RotatedFileHandler> create_encrypt_handler(const std::string &key)
+    {
+        return std::make_unique<EncryptHandler>(std::make_unique<utils::AesCrypt>(key));
+    }
+
 } // namespace logger

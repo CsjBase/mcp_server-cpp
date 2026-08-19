@@ -5,6 +5,7 @@
 #include "utils/os.h"
 #include "utils/circular_q.h"
 #include "logger/rotater/RotationStrategy.h"
+#include "logger/SynchronousFactory.h"
 
 #include <fmt/format.h>
 
@@ -133,4 +134,30 @@ namespace logger
 
     using DailyFileLogSinkMT = DailyFileLogSink<std::mutex>;
     using DailyFileLogSinkST = DailyFileLogSink<utils::null_mutex>;
+
+    template <typename Factory = SynchronousFactory>
+    std::shared_ptr<Logger> create_daily_file_mt_logger(
+        const std::string &logger_name,
+        const std::string &base_filename,
+        int rotation_hour = 0,
+        int rotation_minute = 0,
+        bool truncate = false,
+        uint16_t max_files = 0,
+        std::unique_ptr<RotatedFileHandler> handler = nullptr)
+    {
+        return Factory::template create<DailyFileLogSinkMT>(logger_name, base_filename, rotation_hour, rotation_minute, truncate, max_files, std::move(handler));
+    }
+
+    template <typename Factory = SynchronousFactory>
+    std::shared_ptr<Logger> create_daily_file_st_logger(
+        const std::string &logger_name,
+        const std::string &base_filename,
+        int rotation_hour = 0,
+        int rotation_minute = 0,
+        bool truncate = false,
+        uint16_t max_files = 0,
+        std::unique_ptr<RotatedFileHandler> handler = nullptr)
+    {
+        return Factory::template create<DailyFileLogSinkST>(logger_name, base_filename, rotation_hour, rotation_minute, truncate, max_files, std::move(handler));
+    }
 }

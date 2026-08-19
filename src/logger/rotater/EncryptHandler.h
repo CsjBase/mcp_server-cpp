@@ -2,6 +2,7 @@
 
 #include "logger/rotater/RotatedFileHandler.h"
 #include "utils/crypt.h"
+#include "utils/aes_crypt.h"
 
 #include <memory>
 #include <string>
@@ -35,5 +36,7 @@ namespace logger
     private:
         std::unique_ptr<utils::Crypt> crypt_;
     };
+
+    std::unique_ptr<RotatedFileHandler> create_encrypt_handler(const std::string &key);
 
 } // namespace logger

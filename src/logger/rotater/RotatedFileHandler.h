@@ -47,4 +47,6 @@ namespace logger
         std::vector<std::unique_ptr<RotatedFileHandler>> chain_;
     };
 
+    std::unique_ptr<RotatedFileHandler> create_composite_handler(std::vector<std::unique_ptr<RotatedFileHandler>> chain);
+
 } // namespace logger

@@ -4,6 +4,7 @@
 #include "logger/rotater/RotatedFileHandler.h"
 #include "logger/sinks/BaseLogSink.h"
 #include "utils/os.h"
+#include "logger/SynchronousFactory.h"
 
 #include <fmt/format.h>
 
@@ -14,7 +15,7 @@ namespace logger
     class RotatingFileLogSink : public BaseLogSink<Mutex>
     {
     public:
-        RotatingFileLogSink(std::string base_filename, size_t max_size, size_t max_files,
+        RotatingFileLogSink(const std::string &base_filename, size_t max_size, size_t max_files,
                             bool rotate_on_open = false,
                             std::unique_ptr<RotatedFileHandler> handler = nullptr);
         std::string filename();
@@ -37,10 +38,10 @@ namespace logger
     };
 
     template <typename Mutex>
-    RotatingFileLogSink<Mutex>::RotatingFileLogSink(std::string base_filename, size_t max_size, size_t max_files,
+    RotatingFileLogSink<Mutex>::RotatingFileLogSink(const std::string &base_filename, size_t max_size, size_t max_files,
                                                     bool rotate_on_open,
                                                     std::unique_ptr<RotatedFileHandler> handler)
-        : base_filename_(std::move(base_filename)),
+        : base_filename_(base_filename),
           max_size_(max_size),
           current_size_(0),
           rotater_(std::make_shared<SizeBasedRotation>(base_filename_, max_files, std::move(handler)))
@@ -129,4 +130,28 @@ namespace logger
 
     using RotatingFileLogSinkMT = RotatingFileLogSink<std::mutex>;
     using RotatingFileLogSinkST = RotatingFileLogSink<utils::null_mutex>;
+
+    template <typename Factory = SynchronousFactory>
+    std::shared_ptr<Logger> create_rotating_file_mt_logger(
+        const std::string &logger_name,
+        const std::string &base_filename,
+        size_t max_size = 0,
+        size_t max_files = 0,
+        bool rotate_on_open = false,
+        std::unique_ptr<RotatedFileHandler> handler = nullptr)
+    {
+        return Factory::template create<RotatingFileLogSinkMT>(logger_name, base_filename, max_size, max_files, rotate_on_open, std::move(handler));
+    }
+
+    template <typename Factory = SynchronousFactory>
+    std::shared_ptr<Logger> create_rotating_file_st_logger(
+        const std::string &logger_name,
+        const std::string &base_filename,
+        size_t max_size = 0,
+        size_t max_files = 0,
+        bool rotate_on_open = false,
+        std::unique_ptr<RotatedFileHandler> handler = nullptr)
+    {
+        return Factory::template create<RotatingFileLogSinkST>(logger_name, base_filename, max_size, max_files, rotate_on_open, std::move(handler));
+    }
 }
