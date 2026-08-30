@@ -1,6 +1,7 @@
 #include "net/EventLoop.h"
 #include "logger/log.h"
 #include "net/base/SocketOps.h"
+#include "net/TimerId.h"
 
 #include <sys/eventfd.h>
 #include <assert.h>
@@ -12,8 +13,9 @@ namespace net
 
     EventLoop::EventLoop()
         : m_looping(false), m_quit(false), m_threadId(utils::thread_id()),
-          m_poller(Poller::newDefaultPoller(this)), m_wakeupFd(createEventfd()),
-          m_wakeupChannel(new Channel(this, m_wakeupFd)), m_callingPendingFunctors(false)
+          m_poller(Poller::newDefaultPoller(this)), m_timerManager(new TimerManager(this)),
+          m_wakeupFd(createEventfd()), m_wakeupChannel(new Channel(this, m_wakeupFd)),
+          m_callingPendingFunctors(false)
     {
         if (t_loopInThisThread)
         {
@@ -89,7 +91,7 @@ namespace net
         }
         else
         { // 在非当前loop线程中执行cb，需要唤醒loop所在线程，执行cb
-            queueInLoop(cb);
+            queueInLoop(std::move(cb));
         }
     }
 
@@ -97,7 +99,7 @@ namespace net
     {
         {
             std::lock_guard lock(m_mutex);
-            m_pendingFunctors.emplace_back(cb);
+            m_pendingFunctors.emplace_back(std::move(cb));
         }
 
         // 唤醒相应的，需要执行上面回调操作的loop线程
@@ -106,6 +108,28 @@ namespace net
         { // callingPendingFunctors_待解释
             wakeup();
         }
+    }
+
+    TimerId EventLoop::runAt(Timestamp time, TimerCallback cb)
+    {
+        return m_timerManager->addTimer(std::move(cb), time, 0.0);
+    }
+
+    TimerId EventLoop::runAfter(double delay, TimerCallback cb)
+    {
+        Timestamp time(Timestamp::addSeconds(Timestamp::now(), delay));
+        return runAt(time, std::move(cb));
+    }
+
+    TimerId EventLoop::runEvery(double interval, TimerCallback cb)
+    {
+        Timestamp time(Timestamp::addSeconds(Timestamp::now(), interval));
+        return m_timerManager->addTimer(std::move(cb), time, interval);
+    }
+
+    void EventLoop::cancel(TimerId timerId)
+    {
+        return m_timerManager->cancel(timerId);
     }
 
     void EventLoop::wakeup()

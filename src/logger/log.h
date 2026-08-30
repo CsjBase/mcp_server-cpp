@@ -3,6 +3,7 @@
 #include "logger/LoggerManager.h"
 #include "logger/SynchronousFactory.h"
 
+#define LOG_TRACE(Logger, ...) LOG_LEVEL(Logger, logger::LogLevel::Trace, ##__VA_ARGS__)
 #define LOG_DEBUG(Logger, ...) LOG_LEVEL(Logger, logger::LogLevel::Debug, ##__VA_ARGS__)
 #define LOG_INFO(Logger, ...) LOG_LEVEL(Logger, logger::LogLevel::Info, ##__VA_ARGS__)
 #define LOG_WARN(Logger, ...) LOG_LEVEL(Logger, logger::LogLevel::Warn, ##__VA_ARGS__)

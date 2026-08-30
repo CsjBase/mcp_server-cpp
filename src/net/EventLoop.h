@@ -3,6 +3,7 @@
 #include "net/Channel.h"
 #include "net/Poller.h"
 #include "utils/os.h"
+#include "net/TimerManager.h"
 
 #include <functional>
 #include <memory>
@@ -33,6 +34,27 @@ namespace net
         void runInLoop(Functor cb);
         // 把cb放入队列中，唤醒loop所在的线程，执行cb
         void queueInLoop(Functor cb);
+
+        ///
+        /// Runs callback at 'time'.
+        /// Safe to call from other threads.
+        ///
+        TimerId runAt(Timestamp time, TimerCallback cb);
+        ///
+        /// Runs callback after @c delay seconds.
+        /// Safe to call from other threads.
+        ///
+        TimerId runAfter(double delay, TimerCallback cb);
+        ///
+        /// Runs callback every @c interval seconds.
+        /// Safe to call from other threads.
+        ///
+        TimerId runEvery(double interval, TimerCallback cb);
+        ///
+        /// Cancels the timer.
+        /// Safe to call from other threads.
+        ///
+        void cancel(TimerId timerId);
 
         // 用来唤醒loop所在线程的
         void wakeup();
@@ -66,6 +88,7 @@ namespace net
         const pid_t m_threadId;     // 基类当前loop所在线程的id
         Timestamp m_pollReturnTime; // poller返回发生事件的channels的时间点
         Poller *m_poller;
+        std::unique_ptr<TimerManager> m_timerManager;
 
         int m_wakeupFd; // 主要作用：当mainLoop获取新用户的channel，通过轮询算法选择一个subLoop，通过该成员唤醒subLoop处理channel
         std::unique_ptr<Channel> m_wakeupChannel;

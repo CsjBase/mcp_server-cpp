@@ -226,8 +226,11 @@ namespace net
             //  定时器重试， todo
             //  m_loop->addTimer(m_retryDelayMs, std::bind(&Connector::startInLoop, shared_from_this()));
             //  m_retryDelayMs = std::min(m_retryDelayMs * 2, kMaxRetryDelayMs);
+            m_loop->runAfter(m_retryDelayMs / 1000.0,
+                             std::bind(&Connector::startInLoop, shared_from_this()));
+            m_retryDelayMs = std::min(m_retryDelayMs * 2, kMaxRetryDelayMs);
 
-            m_loop->runInLoop(std::bind(&Connector::startInLoop, this)); // FIXME: unsafe
+            // m_loop->runInLoop(std::bind(&Connector::startInLoop, this)); // FIXME: unsafe
         }
         else
         {

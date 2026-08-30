@@ -8,6 +8,7 @@ namespace net
     class Timestamp
     {
     public:
+        static constexpr int kMicroSecondsPerSecond = 1000 * 1000;
         Timestamp();
         Timestamp(int64_t microSecondsSinceEpoch);
 
@@ -15,30 +16,51 @@ namespace net
         std::string toString() const;
 
         int64_t toSeconds();
-
-        Timestamp &operator+=(Timestamp lhs)
+        static Timestamp addSeconds(Timestamp timestamp, double seconds);
+        static Timestamp invalid()
         {
-            this->microSecondsSinceEpoch_ += lhs.microSecondsSinceEpoch_;
-            return *this;
+            return Timestamp();
+        }
+        bool valid() const { return microSecondsSinceEpoch_ > 0; }
+
+        bool operator<(Timestamp lhs) const
+        {
+            return this->microSecondsSinceEpoch_ < lhs.microSecondsSinceEpoch_;
         }
 
-        Timestamp &operator+=(int64_t lhs)
+        bool operator==(Timestamp lhs) const
         {
-            this->microSecondsSinceEpoch_ += lhs;
-            return *this;
+            return this->microSecondsSinceEpoch_ == lhs.microSecondsSinceEpoch_;
         }
 
-        Timestamp &operator-=(Timestamp lhs)
+        bool operator!=(Timestamp lhs) const
         {
-            this->microSecondsSinceEpoch_ -= lhs.microSecondsSinceEpoch_;
-            return *this;
+            return this->microSecondsSinceEpoch_ != lhs.microSecondsSinceEpoch_;
         }
 
-        Timestamp &operator-=(int64_t lhs)
-        {
-            this->microSecondsSinceEpoch_ -= lhs;
-            return *this;
-        }
+        // Timestamp &operator+=(Timestamp lhs)
+        // {
+        //     this->microSecondsSinceEpoch_ += lhs.microSecondsSinceEpoch_;
+        //     return *this;
+        // }
+
+        // Timestamp &operator+=(int64_t lhs)
+        // {
+        //     this->microSecondsSinceEpoch_ += lhs;
+        //     return *this;
+        // }
+
+        // Timestamp &operator-=(Timestamp lhs)
+        // {
+        //     this->microSecondsSinceEpoch_ -= lhs.microSecondsSinceEpoch_;
+        //     return *this;
+        // }
+
+        // Timestamp &operator-=(int64_t lhs)
+        // {
+        //     this->microSecondsSinceEpoch_ -= lhs;
+        //     return *this;
+        // }
 
         int64_t microSecondsSinceEpoch() { return microSecondsSinceEpoch_; }
 
