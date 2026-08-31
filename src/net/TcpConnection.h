@@ -6,6 +6,8 @@
 #include "net/EventLoop.h"
 #include "net/CallBacks.h"
 
+#include <any>
+
 namespace net
 {
 
@@ -51,6 +53,21 @@ namespace net
         void forceClose();
         void forceCloseInLoop();
 
+        void setContext(const std::any &context)
+        {
+            m_context = context;
+        }
+
+        const std::any &getContext() const
+        {
+            return m_context;
+        }
+
+        std::any *getMutableContext()
+        {
+            return &m_context;
+        }
+
     private:
         void handleRead(Timestamp receiveTime);
         void handleWrite();
@@ -87,6 +104,7 @@ namespace net
         size_t m_highWaterMark;
         Buffer m_inputBuffer;
         Buffer m_outputBuffer;
+        std::any m_context;
     };
 
 }

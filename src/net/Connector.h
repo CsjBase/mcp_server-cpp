@@ -10,7 +10,8 @@ namespace net
     class Connector : public std::enable_shared_from_this<Connector>
     {
     public:
-        typedef std::function<void(int sockfd)> NewConnectionCallback;
+        using NewConnectionCallback = std::function<void(int sockfd)>;
+        using ptr = std::shared_ptr<Connector>;
 
         Connector(EventLoop *loop, std::shared_ptr<Address> serverAddr);
         ~Connector();

@@ -5,3 +5,6 @@ target_link_libraries(basic_EchoServer_test PRIVATE csj_net )
 
 add_executable(timerManager_test timerManager_test.cc)
 target_link_libraries(timerManager_test PRIVATE csj_net )
+
+add_executable(echo_TcpServer_test echo_TcpServer_test.cc)
+target_link_libraries(echo_TcpServer_test PRIVATE csj_net )
