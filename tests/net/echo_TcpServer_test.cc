@@ -25,8 +25,9 @@ public:
         conn->send(msg);
     }
 
-    void start()
+    void start(int threadNum = std::thread::hardware_concurrency())
     {
+        m_server.setThreadNum(threadNum);
         m_server.start();
     }
 

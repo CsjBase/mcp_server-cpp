@@ -1,5 +1,5 @@
 #include "net/TimerManager.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 #include "net/EventLoop.h"
 
 #include <sys/timerfd.h>
@@ -13,7 +13,7 @@ namespace net
                                        TFD_NONBLOCK | TFD_CLOEXEC);
         if (timerfd < 0)
         {
-            LOG_FATAL(LOGGER_DEFAULT(), "Failed in timerfd_create");
+            LOG_FATAL("Failed in timerfd_create");
         }
         return timerfd;
     }
@@ -44,7 +44,7 @@ namespace net
         int ret = ::timerfd_settime(timerfd, 0, &newValue, &oldValue);
         if (ret)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "timerfd_settime()");
+            LOG_ERROR("timerfd_settime()");
         }
     }
 
@@ -52,10 +52,10 @@ namespace net
     {
         uint64_t howmany;
         ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
-        LOG_TRACE(LOGGER_DEFAULT(), "TimerManager::handleRead() {} at {}", howmany, now.toString());
+        LOG_TRACE("TimerManager::handleRead() {} at {}", howmany, now.toString());
         if (n != sizeof howmany)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "TimerManager::handleRead() reads {} bytes instead of 8", n);
+            LOG_ERROR("TimerManager::handleRead() reads {} bytes instead of 8", n);
         }
     }
 

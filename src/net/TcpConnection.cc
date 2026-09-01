@@ -1,12 +1,12 @@
 #include "net/TcpConnection.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 
 namespace net
 {
 
     void defaultConnectionCallback(const TcpConnection::ptr &conn)
     {
-        LOG_DEBUG(LOGGER_DEFAULT(), "{} -> {} is {}", conn->localAddress()->to_string(), conn->peerAddress()->to_string(), (conn->connected() ? "UP" : "DOWN"));
+        LOG_DEBUG("{} -> {} is {}", conn->localAddress()->to_string(), conn->peerAddress()->to_string(), (conn->connected() ? "UP" : "DOWN"));
         // do not call conn->forceClose(), because some users want to register message callback only.
     }
 
@@ -24,13 +24,13 @@ namespace net
         m_channel->setCloseCallback(std::bind(&TcpConnection::handleClose, this));
         m_channel->setErrorCallback(std::bind(&TcpConnection::handleError, this));
 
-        LOG_DEBUG(LOGGER_DEFAULT(), "TcpConnection::ctor[{}] at 0x{} fd={}", m_name, (void *)this, m_socket->fd());
+        LOG_DEBUG("TcpConnection::ctor[{}] at 0x{} fd={}", m_name, (void *)this, m_socket->fd());
         m_socket->setKeepAlive(true);
     }
 
     TcpConnection::~TcpConnection()
     {
-        LOG_DEBUG(LOGGER_DEFAULT(), "TcpConnection::dtor[{}] at fd={} state={}", m_name.c_str(), m_channel->fd(), stateToString());
+        LOG_DEBUG("TcpConnection::dtor[{}] at fd={} state={}", m_name.c_str(), m_channel->fd(), stateToString());
     }
 
     void TcpConnection::send(const void *message, int len)
@@ -138,7 +138,7 @@ namespace net
         else
         {
             errno = savedErrno;
-            LOG_ERROR(LOGGER_DEFAULT(), "TcpConnrction::handleRead! errno={} errstr={}", savedErrno, strerror(savedErrno));
+            LOG_ERROR("TcpConnrction::handleRead! errno={} errstr={}", savedErrno, strerror(savedErrno));
             handleError();
         }
     }
@@ -170,12 +170,12 @@ namespace net
             }
             else
             {
-                LOG_ERROR(LOGGER_DEFAULT(), "TcpConnection::handleWrite error. errno={} errstr={}", saveErrno, strerror(saveErrno));
+                LOG_ERROR("TcpConnection::handleWrite error. errno={} errstr={}", saveErrno, strerror(saveErrno));
             }
         }
         else
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "TcpConnection fd={} is down, no more writing", m_channel->fd());
+            LOG_ERROR("TcpConnection fd={} is down, no more writing", m_channel->fd());
         }
     }
 
@@ -183,7 +183,7 @@ namespace net
     {
         m_loop->assertInLoopThread();
 
-        LOG_DEBUG(LOGGER_DEFAULT(), "TcpConnection::handleClose fd={} state={}", m_channel->fd(), stateToString());
+        LOG_DEBUG("TcpConnection::handleClose fd={} state={}", m_channel->fd(), stateToString());
         setState(StateE::kDisconnected);
         m_channel->disableAll();
 
@@ -198,11 +198,11 @@ namespace net
         socklen_t optlen = sizeof optval;
         if (::getsockopt(m_channel->fd(), SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "TcpConnection::handleError name:{}  errno={} errstr={}", m_name, errno, strerror(errno));
+            LOG_ERROR("TcpConnection::handleError name:{}  errno={} errstr={}", m_name, errno, strerror(errno));
         }
         else
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "TcpConnection::handleError name:{}  - SO_ERROR:", m_name, optval);
+            LOG_ERROR("TcpConnection::handleError name:{}  - SO_ERROR:", m_name, optval);
         }
     }
 
@@ -234,7 +234,7 @@ namespace net
         // 之前调过该connection的shutdown，不能再进行发送了
         if (m_state == StateE::kDisconnected)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "disconnected, give up writing");
+            LOG_ERROR("disconnected, give up writing");
             return;
         }
 
@@ -257,7 +257,7 @@ namespace net
                 nwrote = 0;
                 if (errno != EWOULDBLOCK)
                 {
-                    LOG_ERROR(LOGGER_DEFAULT(), "TcpConnection::sendInLoop! errno={} errstr={}", errno, strerror(errno));
+                    LOG_ERROR("TcpConnection::sendInLoop! errno={} errstr={}", errno, strerror(errno));
                     if (errno == EPIPE || errno == ECONNRESET)
                     { // EPIPE  ECONNRESET
                         faultErrno = true;

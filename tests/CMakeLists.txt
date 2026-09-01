@@ -24,6 +24,6 @@ add_subdirectory(utils)
 add_subdirectory(net)
 
 add_executable(ctest test.cc)
-target_link_libraries(ctest PUBLIC csj_log)
+target_link_libraries(ctest PUBLIC csj_net)
 
 

@@ -15,7 +15,13 @@ int main()
 {
     try
     {
+        LOGGER_DEFAULT()->set_level(logger::LogLevel::Trace);
+        LOG_TRACE(LOGGER_DEFAULT(), "Hello, World!");
+        LOG_DEBUG(LOGGER_DEFAULT(), "Hello, World!");
         LOG_INFO(LOGGER_DEFAULT(), "Hello, World!");
+        LOG_WARN(LOGGER_DEFAULT(), "Hello, World!");
+        LOG_ERROR(LOGGER_DEFAULT(), "Hello, World!");
+        LOG_FATAL(LOGGER_DEFAULT(), "Hello, World!");
         LOG_INFO(LOGGER_DEFAULT(), "Support for int: {0:d};  hex: {0:x};  oct: {0:o}; bin: {0:b}", 42);
         LOG_INFO(LOGGER_DEFAULT(), "Support for floats {:03.2f}", 1.23456);
         LOG_INFO(LOGGER_DEFAULT(), "Positional args are {1} {0}..", "too", "supported");
@@ -141,6 +147,7 @@ void async_example()
 }
 
 #include "logger/sinks/ColorLogSink.h"
+#include "logger/SynchronousFactory.h"
 void multi_sink_example()
 {
     auto console_sink = std::make_shared<logger::StderrColorLogSinkMT>();
@@ -150,8 +157,12 @@ void multi_sink_example()
     auto file_sink = std::make_shared<logger::BasicFileLogSinkMT>("logs/multi_sink.log", true);
     file_sink->set_level(logger::LogLevel::Trace);
 
-    logger::Logger multi_sink_logger("multi_sink_logger", {console_sink, file_sink});
-    multi_sink_logger.set_level(logger::LogLevel::Debug);
-    multi_sink_logger.warn("this should appear in both console and file");
-    multi_sink_logger.info("this message should not appear in the console, only in the file");
+    std::vector<std::shared_ptr<logger::LogSink>> sinks({console_sink, file_sink});
+
+    // logger::Logger multi_sink_logger("multi_sink_logger", {console_sink, file_sink});
+    // auto multi_sink_logger = logger::create_logger("multi_sink_logger", {console_sink, file_sink});
+    auto multi_sink_logger = logger::create_logger("multi_sink_logger", sinks.begin(), sinks.end());
+    multi_sink_logger->set_level(logger::LogLevel::Debug);
+    multi_sink_logger->warn("this should appear in both console and file");
+    multi_sink_logger->info("this message should not appear in the console, only in the file");
 }

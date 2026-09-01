@@ -1,5 +1,5 @@
 #include "net/base/SocketOps.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 
 #include <stdexcept>
 #include <sys/fcntl.h>
@@ -14,7 +14,7 @@ namespace net
         addr->sin_port = htobe16(port);
         if (::inet_pton(AF_INET, ip, &addr->sin_addr) <= 0)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "fromIpPort failed");
+            LOG_ERROR("fromIpPort failed");
         }
     }
 
@@ -25,7 +25,7 @@ namespace net
         addr->sin6_port = htobe16(port);
         if (::inet_pton(AF_INET6, ip, &addr->sin6_addr) <= 0)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "fromIpPort failed");
+            LOG_ERROR("fromIpPort failed");
         }
     }
 
@@ -34,7 +34,7 @@ namespace net
         int sockfd = ::socket(family, SOCK_STREAM, IPPROTO_TCP);
         if (sockfd < 0)
         {
-            LOG_FATAL(LOGGER_DEFAULT(), "sockets::createNonblockingOrDie error");
+            LOG_FATAL("sockets::createNonblockingOrDie error");
             return sockfd;
         }
 
@@ -48,13 +48,13 @@ namespace net
         int flags = ::fcntl(sockfd, F_GETFL, 0);
         if (flags == -1)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "::fcntl({}, F_GETFL, 0) errno={} errstr={}", sockfd, errno, strerror(errno));
+            LOG_ERROR("::fcntl({}, F_GETFL, 0) errno={} errstr={}", sockfd, errno, strerror(errno));
         }
         flags |= O_NONBLOCK;
         int ret = ::fcntl(sockfd, F_SETFL, flags);
         if (ret == -1)
         {
-            LOG_FATAL(LOGGER_DEFAULT(), "::fcntl({}) set NonBlock err! errno={} errstr={}", sockfd,
+            LOG_FATAL("::fcntl({}) set NonBlock err! errno={} errstr={}", sockfd,
                       errno, strerror(errno));
         }
 
@@ -62,13 +62,13 @@ namespace net
         flags = ::fcntl(sockfd, F_GETFD, 0);
         if (flags == -1)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "::fcntl({}, F_GETFD, 0) errno={} errstr={}", sockfd, errno, strerror(errno));
+            LOG_ERROR("::fcntl({}, F_GETFD, 0) errno={} errstr={}", sockfd, errno, strerror(errno));
         }
         flags |= FD_CLOEXEC;
         ret = ::fcntl(sockfd, F_SETFD, flags);
         if (ret == -1)
         {
-            LOG_FATAL(LOGGER_DEFAULT(), "::fcntl({}) set close-on-exec err! errno={} errstr={}", sockfd, errno, strerror(errno));
+            LOG_FATAL("::fcntl({}) set close-on-exec err! errno={} errstr={}", sockfd, errno, strerror(errno));
         }
     }
 
@@ -77,7 +77,7 @@ namespace net
         int evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
         if (evtfd < 0)
         {
-            LOG_FATAL(LOGGER_DEFAULT(), "eventfd error! errno:{} errstr={}", errno, strerror(errno));
+            LOG_FATAL("eventfd error! errno:{} errstr={}", errno, strerror(errno));
         }
         return evtfd;
     }
@@ -103,7 +103,7 @@ namespace net
         memset(&localaddr, 0, sizeof localaddr);
         if (::getsockname(sockfd, (sockaddr *)(&localaddr), &addrlen) < 0)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "get fd:{} addr err", sockfd);
+            LOG_ERROR("get fd:{} addr err", sockfd);
         }
         switch (localaddr.ss_family)
         {
@@ -138,7 +138,7 @@ namespace net
         memset(&peeraddr, 0, sizeof peeraddr);
         if (::getpeername(sockfd, (sockaddr *)(&peeraddr), &addrlen) < 0)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "get fd:{} addr err", sockfd);
+            LOG_ERROR("get fd:{} addr err", sockfd);
         }
 
         switch (peeraddr.ss_family)

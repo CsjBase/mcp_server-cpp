@@ -1,5 +1,5 @@
 #include "net/EventLoop.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 #include "net/base/SocketOps.h"
 #include "net/TimerId.h"
 
@@ -19,7 +19,7 @@ namespace net
     {
         if (t_loopInThisThread)
         {
-            LOG_FATAL(LOGGER_DEFAULT(), "Another EventLoop {} exists in this thread", (void *)t_loopInThisThread);
+            LOG_FATAL("Another EventLoop {} exists in this thread", (void *)t_loopInThisThread);
         }
         else
         {
@@ -50,7 +50,7 @@ namespace net
         m_looping = true;
         m_quit = false;
 
-        LOG_DEBUG(LOGGER_DEFAULT(), "EventLoop {} start looping.", (void *)this);
+        LOG_DEBUG("EventLoop {} start looping.", (void *)this);
 
         while (!m_quit)
         {
@@ -70,7 +70,7 @@ namespace net
              */
             doPendingFunctors();
         }
-        LOG_DEBUG(LOGGER_DEFAULT(), "EventLoop {} stop looping.", (void *)this);
+        LOG_DEBUG("EventLoop {} stop looping.", (void *)this);
     }
 
     void EventLoop::quit()
@@ -138,7 +138,7 @@ namespace net
         ssize_t n = write(m_wakeupFd, &one, sizeof one);
         if (n != sizeof one)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "EventLoop::wakeup() write {} bytes instead of 8", n);
+            LOG_ERROR("EventLoop::wakeup() write {} bytes instead of 8", n);
         }
     }
 
@@ -169,7 +169,7 @@ namespace net
         ssize_t n = read(m_wakeupFd, &one, sizeof one);
         if (n != sizeof one)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "EventLoop::handleRead() reads {} bytes instead of 8", n);
+            LOG_ERROR("EventLoop::handleRead() reads {} bytes instead of 8", n);
         }
     }
 
@@ -193,7 +193,7 @@ namespace net
 
     void EventLoop::abortNotInLoopThread()
     {
-        LOG_FATAL(LOGGER_DEFAULT(), "m_threadId = {} current threadid = {}", m_threadId, utils::thread_id());
+        LOG_FATAL("m_threadId = {} current threadid = {}", m_threadId, utils::thread_id());
     }
 
 }

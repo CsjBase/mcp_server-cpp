@@ -1,5 +1,5 @@
 #include "net/TcpServer.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 
 #include <sstream>
 
@@ -9,7 +9,7 @@ namespace net
     {
         if (loop == nullptr)
         {
-            LOG_FATAL(LOGGER_DEFAULT(), "mainloop is null!");
+            LOG_FATAL("mainloop is null!");
         }
         return loop;
     }
@@ -58,7 +58,7 @@ namespace net
         ss << m_name << "-" << m_ipPort << "-" << m_nextConnId;
         ++m_nextConnId;
         std::string connName = ss.str();
-        LOG_DEBUG(LOGGER_DEFAULT(), "new connection [{}]  from {}", connName, peerAddr->to_string());
+        LOG_DEBUG("new connection [{}]  from {}", connName, peerAddr->to_string());
 
         // 通过sockfd获取其绑定的本机的IP地址和端口信息
         sockaddr_storage local;
@@ -66,7 +66,7 @@ namespace net
         socklen_t addrLen = sizeof local;
         if (::getsockname(sockfd, (sockaddr *)&local, &addrLen) < 0)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "sockets::getLocalAddr");
+            LOG_ERROR("sockets::getLocalAddr");
         }
 
         Address::ptr localAddr = Address::create(local, addrLen);
@@ -95,7 +95,7 @@ namespace net
     {
         m_loop->assertInLoopThread();
 
-        LOG_DEBUG(LOGGER_DEFAULT(), "connection [{}] close.", conn->name());
+        LOG_DEBUG("connection [{}] close.", conn->name());
 
         m_connections.erase(conn->name());
 

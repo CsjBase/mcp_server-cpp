@@ -401,7 +401,7 @@ namespace logger
         };
 
         // %+ '+'
-        // default format: [%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%s:%#] %v
+        // default format: [%Y-%m-%d %H:%M:%S.%e] [%n] [%^%l%$] [%s:%#] %v
         class DefaultLogFormatItem final : public LogFormatItem
         {
         public:
@@ -478,7 +478,7 @@ namespace logger
                     dest.push_back(']');
                     dest.push_back(' ');
                 }
-                // [%l]
+                // [%^%l%$]
                 dest.push_back('[');
                 event.color_range_start = dest.size();
                 dest.append(logger::to_string_view(event.level));

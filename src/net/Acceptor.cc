@@ -1,6 +1,6 @@
 #include "net/Acceptor.h"
 #include "net/base/SocketOps.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 
 namespace net
 {
@@ -47,10 +47,10 @@ namespace net
         }
         else
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "listen socket create err! errno={} errstr={}", errno, strerror(errno));
+            LOG_ERROR("listen socket create err! errno={} errstr={}", errno, strerror(errno));
             if (errno == EMFILE)
             {
-                LOG_ERROR(LOGGER_DEFAULT(), "socket reached limit!");
+                LOG_ERROR("socket reached limit!");
             }
         }
     }

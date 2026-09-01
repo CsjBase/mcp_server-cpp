@@ -23,10 +23,4 @@ namespace logger
 {
     using DefaultFactory = SynchronousFactory;
 
-    template <typename Sink, typename... SinkArgs>
-    inline std::shared_ptr<Logger> create_logger(std::string logger_name, SinkArgs &&...args)
-    {
-        return DefaultFactory::create(std::move(logger_name), std::forward<SinkArgs>(args)...);
-    }
-
 }

@@ -1,5 +1,5 @@
 #include "net/TcpClient.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 #include "net/base/SocketOps.h"
 
 namespace net
@@ -32,12 +32,12 @@ namespace net
         m_connector->setNewConnectionCallback(
             std::bind(&TcpClient::newConnection, this, std::placeholders::_1));
         // FIXME setConnectFailedCallback
-        LOG_DEBUG(LOGGER_DEFAULT(), "TcpClient[{}] - connector {}", m_name, (void *)m_connector.get());
+        LOG_DEBUG("TcpClient[{}] - connector {}", m_name, (void *)m_connector.get());
     }
 
     TcpClient::~TcpClient()
     {
-        LOG_DEBUG(LOGGER_DEFAULT(), "~TcpClient[{}] - connector {}", m_name, (void *)m_connector.get());
+        LOG_DEBUG("~TcpClient[{}] - connector {}", m_name, (void *)m_connector.get());
         TcpConnection::ptr conn;
         bool unique = false;
         {
@@ -70,7 +70,7 @@ namespace net
     void TcpClient::connect()
     {
         // FIXME: check state
-        LOG_DEBUG(LOGGER_DEFAULT(), "TcpClient::connect[{}] - connecting to {}", m_name, m_connector->serverAddress()->to_string());
+        LOG_DEBUG("TcpClient::connect[{}] - connecting to {}", m_name, m_connector->serverAddress()->to_string());
         m_connect = true;
         m_connector->start();
     }
@@ -137,7 +137,7 @@ namespace net
         m_loop->queueInLoop(std::bind(&TcpConnection::connectDestroyed, conn));
         if (m_retry && m_connect)
         {
-            LOG_DEBUG(LOGGER_DEFAULT(), "TcpClient::connect[{}] - Reconnecting to {}", m_name, m_connector->serverAddress()->to_string());
+            LOG_DEBUG("TcpClient::connect[{}] - Reconnecting to {}", m_name, m_connector->serverAddress()->to_string());
             m_connector->restart();
         }
     }

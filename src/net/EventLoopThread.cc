@@ -1,6 +1,6 @@
 #include "net/EventLoopThread.h"
 #include "net/EventLoop.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 
 namespace net
 {
@@ -37,7 +37,7 @@ namespace net
 
     void EventLoopThread::threadFunc()
     {
-        LOG_DEBUG(LOGGER_DEFAULT(), "{} start.", m_thread.name());
+        LOG_DEBUG("{} start.", m_thread.name());
         EventLoop loop; // 创建一个独立的eventLoop，和上面的线程是一一对应的，one loop per pthread
 
         if (m_callback)

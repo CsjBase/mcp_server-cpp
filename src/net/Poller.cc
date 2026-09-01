@@ -1,6 +1,6 @@
 #include "net/Poller.h"
 #include "net/EventLoop.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 
 namespace net
 {
@@ -32,7 +32,7 @@ namespace net
     {
         if (m_epollfd < 0)
         {
-            LOG_FATAL(LOGGER_DEFAULT(), "epoll_create error! errno:{} errstr:{}", errno, strerror(errno));
+            LOG_FATAL("epoll_create error! errno:{} errstr:{}", errno, strerror(errno));
         }
     }
 
@@ -64,7 +64,7 @@ namespace net
             if (saveErrno != EINTR)
             {
                 errno = saveErrno;
-                LOG_ERROR(LOGGER_DEFAULT(), "EPollPoller::poll() err! errno:{} errstr:{}", saveErrno, strerror(saveErrno));
+                LOG_ERROR("EPollPoller::poll() err! errno:{} errstr:{}", saveErrno, strerror(saveErrno));
             }
         }
         return now;
@@ -139,11 +139,11 @@ namespace net
         {
             if (operation == EPOLL_CTL_DEL)
             {
-                LOG_ERROR(LOGGER_DEFAULT(), "epoll_ctl del error! errno:{} errstr:", errno, strerror(errno));
+                LOG_ERROR("epoll_ctl del error! errno:{} errstr:", errno, strerror(errno));
             }
             else
             {
-                LOG_ERROR(LOGGER_DEFAULT(), "epoll_ctl add/modify error! errno:{} errstr:", errno, strerror(errno));
+                LOG_ERROR("epoll_ctl add/modify error! errno:{} errstr:", errno, strerror(errno));
             }
         }
     }
@@ -168,14 +168,14 @@ namespace net
         }
         else if (numEvents == 0)
         {
-            LOG_DEBUG(LOGGER_DEFAULT(), "PollPoller::poll timeout. nothing happened");
+            LOG_DEBUG("PollPoller::poll timeout. nothing happened");
         }
         else
         {
             if (saveErrno != EINTR)
             {
                 errno = saveErrno;
-                LOG_ERROR(LOGGER_DEFAULT(), "PollPoller::poll() err! errno::{} errstr:", saveErrno, strerror(saveErrno));
+                LOG_ERROR("PollPoller::poll() err! errno::{} errstr:", saveErrno, strerror(saveErrno));
             }
         }
         return now;
@@ -287,7 +287,7 @@ namespace net
             if (saveErrno != EINTR)
             {
                 errno = saveErrno;
-                LOG_ERROR(LOGGER_DEFAULT(), "SelectPoller::poll() err! errno:{} errstr:{}", saveErrno, strerror(saveErrno));
+                LOG_ERROR("SelectPoller::poll() err! errno:{} errstr:{}", saveErrno, strerror(saveErrno));
             }
         }
         return now;

@@ -35,6 +35,7 @@ namespace logger
     class Logger
     {
     public:
+        using ptr = std::shared_ptr<Logger>;
         using ErrHandler = std::function<void(const std::string &err_msg)>;
         explicit Logger(std::string name)
             : name_(std::move(name))

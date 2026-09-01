@@ -1,5 +1,5 @@
 #include "net/base/Socket.h"
-#include "logger/log.h"
+#include "net/base/Log.h"
 
 namespace net
 {
@@ -21,7 +21,7 @@ namespace net
     {
         if (::listen(m_sock, backlog))
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "listen error errno={} errstr={}", errno, strerror(errno));
+            LOG_ERROR("listen error errno={} errstr={}", errno, strerror(errno));
             return false;
         }
         return true;
@@ -35,7 +35,7 @@ namespace net
         if (newsock < 0)
         {
             int savedErrno = errno;
-            LOG_ERROR(LOGGER_DEFAULT(), "Socket::accept");
+            LOG_ERROR("Socket::accept");
             switch (savedErrno)
             {
             case EAGAIN:
@@ -56,10 +56,10 @@ namespace net
             case ENOTSOCK:
             case EOPNOTSUPP:
                 // unexpected errors
-                LOG_FATAL(LOGGER_DEFAULT(), "unexpected error of ::accept errno={} errstr={}", errno, strerror(errno));
+                LOG_FATAL("unexpected error of ::accept errno={} errstr={}", errno, strerror(errno));
                 break;
             default:
-                LOG_FATAL(LOGGER_DEFAULT(), "unknown error of ::accept errno={} errstr={}", errno, strerror(errno));
+                LOG_FATAL("unknown error of ::accept errno={} errstr={}", errno, strerror(errno));
                 break;
             }
         }
@@ -71,7 +71,7 @@ namespace net
     {
         if (::shutdown(m_sock, SHUT_WR) < 0)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "sockets::shutdown_write error!");
+            LOG_ERROR("sockets::shutdown_write error!");
         }
     }
 
@@ -95,12 +95,12 @@ namespace net
         ret = set_option(SOL_SOCKET, SO_REUSEPORT, &optval, static_cast<socklen_t>(sizeof optval));
         if (!ret && on)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "SO_REUSEPORT failed.");
+            LOG_ERROR("SO_REUSEPORT failed.");
         }
 #else
         if (on)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "SO_REUSEPORT is not supported.");
+            LOG_ERROR("SO_REUSEPORT is not supported.");
             return false;
         }
 #endif
@@ -117,7 +117,7 @@ namespace net
     {
         if (setsockopt(m_sock, level, option, result, (socklen_t)len))
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "set_option sock={} level={} option={} errno={} errstr=", m_sock, level, option, errno, strerror(errno));
+            LOG_ERROR("set_option sock={} level={} option={} errno={} errstr=", m_sock, level, option, errno, strerror(errno));
             return false;
         }
         return true;
@@ -141,7 +141,7 @@ namespace net
     {
         if (::connect(m_sock, addr->get_addr(), addr->get_addrLen()) == -1)
         {
-            LOG_ERROR(LOGGER_DEFAULT(), "sock={} connect({}) error errno={} errstr={}", m_sock, addr->to_string(), errno, strerror(errno));
+            LOG_ERROR("sock={} connect({}) error errno={} errstr={}", m_sock, addr->to_string(), errno, strerror(errno));
             return false;
         }
 
