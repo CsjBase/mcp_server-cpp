@@ -5,6 +5,7 @@
         "gtest",
         "fmt",
         "zlib",
-        "openssl"
+        "openssl",
+        "nlohmann-json"
     ]
 }

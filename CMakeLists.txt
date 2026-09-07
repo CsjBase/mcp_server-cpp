@@ -10,6 +10,7 @@ find_package(GTest REQUIRED)
 find_package(fmt REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 add_subdirectory(src)
 
