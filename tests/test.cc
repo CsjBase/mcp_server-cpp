@@ -1,41 +1,60 @@
-// 测试代码
-#include <openssl/rand.h>
-#include <chrono>
+#include <string>
 #include <iostream>
-#include <thread>
-#include <vector>
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <list>
 
-#include "utils/thread_pool.h"
+using json = nlohmann::json;
 
-static int cnt = 0;
-const int iterations = 10000;
-// struct OpenSSLInitializer
-// {
-//     OpenSSLInitializer() { OPENSSL_init_crypto(OPENSSL_INIT_NO_ATEXIT, nullptr); }
-// };
-// static const OpenSSLInitializer g_openssl_init;
-void func()
+static void listAllNodes(const std::string &prefix, const nlohmann::json &json, std::list<std::pair<std::string, nlohmann::json>> &nodes)
 {
-    const int kIvLen = 12;
-    std::unique_ptr<unsigned char[]> iv_(new unsigned char[kIvLen]);
-    if (RAND_bytes(iv_.get(), kIvLen) != 1)
+    if (prefix.find_first_not_of("abcdefghijklmnopqrstuvwxyz._0123456789") != std::string::npos)
     {
-        std::cout << "RAND_bytes() failed，在第" << cnt << "个" << std::endl;
-        throw std::runtime_error("RAND_bytes() failed");
+        throw std::logic_error("invalid config name: " + prefix + ": " + json.dump());
     }
-    cnt++;
-    if (cnt == iterations)
+    nodes.emplace_back(prefix, json);
+    if (json.is_object())
     {
-        std::cout << "成功" << iterations << "个" << std::endl;
+        for (auto it = json.begin(); it != json.end(); ++it)
+        {
+            listAllNodes(prefix.empty() ? it.key() : (prefix + "." + it.key()), it.value(), nodes);
+        }
+    }
+    else if (json.is_array())
+    {
+        for (size_t i = 0; i < json.size(); ++i)
+        {
+            listAllNodes(prefix.empty() ? std::to_string(i) : (prefix + "." + std::to_string(i)), json[i], nodes);
+        }
     }
 }
+struct A
+{
+    int a;
+    std::string b;
+    std::vector<int> c;
+};
 
-std::unique_ptr<utils::ThreadPool> thread_pool_ = std::make_unique<utils::ThreadPool>(1, 1000);
+void to_json(json &j, const A &a)
+{
+    j = json{
+        {"a", a.a},
+        {"b", a.b},
+        {"c", a.c}};
+}
+
+void from_json(const json &j, A &a)
+{
+    j.at("a").get_to(a.a);
+    j.at("b").get_to(a.b);
+    j.at("c").get_to(a.c);
+}
 
 int main()
 {
-    for (int i = 0; i < iterations; i++)
-    {
-        thread_pool_->submit(func);
-    }
+    json j = A{1, "2", {3, 4, 5}};
+    A a = {0, "", {0}};
+    A tmp = a;
+    a = j;
+    j = tmp;
 }

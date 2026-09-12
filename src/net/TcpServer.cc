@@ -15,7 +15,7 @@ namespace net
     }
 
     TcpServer::TcpServer(EventLoop *loop, Address::ptr listenAddr, const std::string &nameArg, Option option)
-        : m_loop(CheckLoopNotNull(loop)), m_ipPort(listenAddr->to_string()), m_name(nameArg), m_acceptor(new Acceptor(m_loop, listenAddr, option == kReusePort)), m_threadPool(new EventLoopThreadPool(m_loop, m_name)), m_connectionCallback(), m_messageCallback(), m_started(0), m_nextConnId(1)
+        : m_loop(CheckLoopNotNull(loop)), m_ipPort(listenAddr->to_string()), m_name(nameArg), m_acceptor(new Acceptor(m_loop, listenAddr, option == Option::kReusePort)), m_threadPool(new EventLoopThreadPool(m_loop, m_name)), m_connectionCallback(), m_messageCallback(), m_started(0), m_nextConnId(1)
     {
         m_acceptor->setNewConnectionCallback(std::bind(&TcpServer::newConnection, this, std::placeholders::_1, std::placeholders::_2));
     }

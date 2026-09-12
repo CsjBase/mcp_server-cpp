@@ -8,3 +8,12 @@ target_link_libraries(timerManager_test PRIVATE csj_net )
 
 add_executable(echo_TcpServer_test echo_TcpServer_test.cc)
 target_link_libraries(echo_TcpServer_test PRIVATE csj_net )
+
+add_executable(http_test http_test.cc)
+target_link_libraries(http_test PRIVATE csj_net )
+
+add_executable(http_parser_test http_parser_test.cc)
+target_link_libraries(http_parser_test PRIVATE csj_net )
+
+add_executable(http_server_test http_server_test.cc)
+target_link_libraries(http_server_test PRIVATE csj_net )

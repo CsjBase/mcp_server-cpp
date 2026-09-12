@@ -12,12 +12,12 @@ namespace net
     {
     public:
         using ThreadInitCallback = std::function<void(EventLoop *)>;
-        enum Option
+        enum class Option
         {
             kNoReusePort,
             kReusePort,
         };
-        TcpServer(EventLoop *loop, Address::ptr listenAddr, const std::string &nameArg, Option option = kNoReusePort);
+        TcpServer(EventLoop *loop, Address::ptr listenAddr, const std::string &nameArg, Option option = Option::kNoReusePort);
         ~TcpServer();
         TcpServer(const TcpServer &) = delete;
         TcpServer &operator=(const TcpServer &) = delete;
