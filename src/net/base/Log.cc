@@ -4,6 +4,8 @@
 #include "logger/sinks/ColorLogSink.h"
 #include "logger/AsynchronousFactory.h"
 
+#include "logger/LogConfig.h"
+
 namespace net
 {
 
@@ -12,12 +14,21 @@ namespace net
         static Log log;
         return log;
     }
+    logger::Logger::ptr Log::getLogger()
+    {
+        return logger::LoggerManager::instance().get_logger("net");
+    }
+
     Log::Log()
     {
-        auto rotating_file_mt_sink = std::make_shared<logger::RotatingFileLogSinkMT>("logs/net.log", 1024 * 1024 * 5, 3);
-        auto color_sink = std::make_shared<logger::StdoutColorLogSinkMT>();
-        m_logger = logger::create_async_logger("net", {rotating_file_mt_sink, color_sink});
-        m_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%t] [%n] [%^%l%$] [%s:%#] %v");
-        m_logger->set_level(logger::LogLevel::Trace);
+        auto logger = logger::LoggerManager::instance().get_logger("net");
+        if (!logger)
+        {
+            auto rotating_file_mt_sink = std::make_shared<logger::RotatingFileLogSinkMT>("logs/net.log", 1024 * 1024 * 5, 3);
+            auto color_sink = std::make_shared<logger::StdoutColorLogSinkMT>();
+            logger = logger::create_async_logger("net", {rotating_file_mt_sink, color_sink});
+            logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%t] [%n] [%^%l%$] [%s:%#] %v");
+            logger->set_level(logger::LogLevel::Trace);
+        }
     }
 }

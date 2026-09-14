@@ -1,5 +1,8 @@
 #include "logger/LoggerManager.h"
 #include "logger/sinks/ColorLogSink.h"
+#include "logger/LogConfig.h"
+
+#include <nlohmann/json.hpp>
 
 namespace logger
 {
@@ -157,11 +160,22 @@ namespace logger
         }
     }
 
+    std::string LoggerManager::toJsonString() const
+    {
+        nlohmann::json j;
+        std::lock_guard<std::mutex> lock(logger_map_mutex_);
+        for (auto &[name, logger] : logger_map_)
+        {
+            j["logs"][name] = logger->toJson();
+        }
+        return j.dump(4);
+    }
+
     LoggerManager::LoggerManager()
         : formatter_(new LogFormatter)
     {
         auto color_sink = std::make_shared<StdoutColorLogSinkMT>();
-        const char *default_logger_name = "";
+        const char *default_logger_name = "default";
         default_logger_ = std::make_shared<Logger>(default_logger_name, std::move(color_sink));
         logger_map_[default_logger_name] = default_logger_;
     }
@@ -178,4 +192,6 @@ namespace logger
             throw LogException("Logger with name '" + logger_name + "' already exists");
         }
     }
+
+    extern config::ConfigVar<std::map<std::string, LoggerConfig>>::ptr g_logger_config;
 }

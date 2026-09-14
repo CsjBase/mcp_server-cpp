@@ -29,6 +29,11 @@ namespace logger
             max_files_ = max_files;
         }
 
+        size_t get_max_files() const
+        {
+            return max_files_;
+        }
+
     protected:
         /// @brief  轮转策略专用线程池，只开1个线程串行执行轮转任务防止错乱，只在启用RotatedFileHandler时启用
         static std::unique_ptr<utils::ThreadPool> rotating_thread_pool_;

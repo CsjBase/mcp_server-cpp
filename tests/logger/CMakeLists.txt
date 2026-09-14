@@ -50,6 +50,9 @@ target_link_libraries(logger_manager_test PUBLIC csj_log)
 add_executable(log_tool_test log_tool_test.cc)
 target_link_libraries(log_tool_test PRIVATE csj_log csj_utils GTest::gtest GTest::gtest_main)
 
+add_executable(logconfig_test logconfig_test.cc)
+target_link_libraries(logconfig_test PRIVATE csj_log csj_utils)
+
 include(GoogleTest)
 gtest_discover_tests(log_tool_test)
 

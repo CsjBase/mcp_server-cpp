@@ -13,6 +13,8 @@ namespace logger
         BasicFileLogSink(const std::string &file_path, bool truncate = false);
         const std::string &filename() const;
         void truncate();
+        nlohmann::json toJson() const override;
+        std::string toJsonString() const override;
 
     protected:
         void sink_it_(const details::LogEvent &event) override;
@@ -39,6 +41,31 @@ namespace logger
     {
         std::lock_guard<Mutex> lock(BaseLogSink<Mutex>::mutex_);
         file_helper_.reopen(true);
+    }
+
+    template <typename Mutex>
+    nlohmann::json BasicFileLogSink<Mutex>::toJson() const
+    {
+        const std::string_view typeName = []
+        {if constexpr (std::is_same_v<Mutex, std::mutex>)
+        {
+            return "basicfile_mt";
+        }
+        else
+        {
+            return "basicfile_st";
+        } }();
+        std::lock_guard<Mutex> lock(BaseLogSink<Mutex>::mutex_);
+        return nlohmann::json{{"type", typeName},
+                              {"level", to_string_view(LogSink::level_)},
+                              {"pattern", BaseLogSink<Mutex>::formatter_->get_pattern()},
+                              {"file", file_helper_.filename()}};
+    }
+
+    template <typename Mutex>
+    std::string BasicFileLogSink<Mutex>::toJsonString() const
+    {
+        return toJson().dump();
     }
 
     template <typename Mutex>

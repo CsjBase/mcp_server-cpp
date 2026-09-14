@@ -20,7 +20,8 @@ namespace logger
                             std::unique_ptr<RotatedFileHandler> handler = nullptr);
         std::string filename();
         void rotate_now();
-        ~RotatingFileLogSink() = default;
+        nlohmann::json toJson() const override;
+        std::string toJsonString() const override;
 
     protected:
         void sink_it_(const details::LogEvent &msg) override;
@@ -78,6 +79,34 @@ namespace logger
         std::lock_guard<Mutex> lock(BaseLogSink<Mutex>::mutex_);
         rotate_();
         current_size_ = 0;
+    }
+
+    template <typename Mutex>
+    nlohmann::json RotatingFileLogSink<Mutex>::toJson() const
+    {
+        const std::string_view typeName = []
+        {if constexpr (std::is_same_v<Mutex, std::mutex>)
+        {
+            return "rotatingfile_mt";
+        }
+        else
+        {
+            return "rotatingfile_st";
+        } }();
+
+        std::lock_guard<Mutex> lock(BaseLogSink<Mutex>::mutex_);
+        return nlohmann::json{{"type", typeName},
+                              {"level", to_string_view(LogSink::level_)},
+                              {"pattern", BaseLogSink<Mutex>::formatter_->get_pattern()},
+                              {"file", base_filename_},
+                              {"max_files", rotater_->get_max_files()},
+                              {"max_size", max_size_}};
+    }
+
+    template <typename Mutex>
+    std::string RotatingFileLogSink<Mutex>::toJsonString() const
+    {
+        return toJson().dump();
     }
 
     template <typename Mutex>

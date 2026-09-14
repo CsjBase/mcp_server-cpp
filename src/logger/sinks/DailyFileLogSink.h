@@ -20,12 +20,14 @@ namespace logger
                          int rotation_hour = 0,
                          int rotation_minute = 0,
                          bool truncate = false,
-                         uint16_t max_files = 0,
+                         size_t max_files = 0,
                          std::unique_ptr<RotatedFileHandler> handler = nullptr);
 
         std::string filename();
         static std::string calc_filename(const std::string &filename, const tm &now_tm);
         static tm now_tm(std::chrono::system_clock::time_point now);
+        nlohmann::json toJson() const override;
+        std::string toJsonString() const override;
 
     protected:
         void sink_it_(const details::LogEvent &event) override;
@@ -49,7 +51,7 @@ namespace logger
                                               int rotation_hour,
                                               int rotation_minute,
                                               bool truncate,
-                                              uint16_t max_files,
+                                              size_t max_files,
                                               std::unique_ptr<RotatedFileHandler> handler)
         : base_filename_(base_filename),
           rotation_h_(rotation_hour),
@@ -114,6 +116,33 @@ namespace logger
         std::tm tm;
         ::localtime_r(&tnow, &tm);
         return tm;
+    }
+
+    template <typename Mutex>
+    nlohmann::json DailyFileLogSink<Mutex>::toJson() const
+    {
+        const std::string_view typeName = []
+        {if constexpr (std::is_same_v<Mutex, std::mutex>)
+        {
+            return "dailyfile_mt";
+        }
+        else
+        {
+            return "dailyfile_st";
+        } }();
+
+        std::lock_guard<Mutex> lock(BaseLogSink<Mutex>::mutex_);
+        return nlohmann::json{{"type", typeName},
+                              {"level", to_string_view(LogSink::level_)},
+                              {"pattern", BaseLogSink<Mutex>::formatter_->get_pattern()},
+                              {"file", base_filename_},
+                              {"max_files", rotater_->get_max_files()}};
+    }
+
+    template <typename Mutex>
+    std::string DailyFileLogSink<Mutex>::toJsonString() const
+    {
+        return toJson().dump();
     }
 
     template <typename Mutex>

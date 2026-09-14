@@ -2,19 +2,22 @@
 
 #include "logger/LoggerManager.h"
 #include "logger/SynchronousFactory.h"
+#include "logger/log.h"
 
-#define SRC_LOCATION \
-    logger::details::SourceLocation { __FILE_NAME__, __LINE__, __FUNCTION__ }
+// #define SRC_LOCATION \
+//     logger::details::SourceLocation { __FILE_NAME__, __LINE__, __FUNCTION__ }
 
-#define LOG_LEVEL(level, ...) \
-    net::Log::instance().getLogger()->log(SRC_LOCATION, level, ##__VA_ARGS__)
+// #define LOG_LEVEL(level, ...) \
+//     net::Log::instance().getLogger()->log(SRC_LOCATION, level, ##__VA_ARGS__)
 
-#define LOG_TRACE(...) LOG_LEVEL(logger::LogLevel::Trace, ##__VA_ARGS__)
-#define LOG_DEBUG(...) LOG_LEVEL(logger::LogLevel::Debug, ##__VA_ARGS__)
-#define LOG_INFO(...) LOG_LEVEL(logger::LogLevel::Info, ##__VA_ARGS__)
-#define LOG_WARN(...) LOG_LEVEL(logger::LogLevel::Warn, ##__VA_ARGS__)
-#define LOG_ERROR(...) LOG_LEVEL(logger::LogLevel::Error, ##__VA_ARGS__)
-#define LOG_FATAL(...) LOG_LEVEL(logger::LogLevel::Fatal, ##__VA_ARGS__)
+#define NET_LOGGER() net::Log::instance().getLogger()
+
+#define NET_LOG_TRACE(...) LOG_TRACE(NET_LOGGER(), ##__VA_ARGS__)
+#define NET_LOG_DEBUG(...) LOG_DEBUG(NET_LOGGER(), ##__VA_ARGS__)
+#define NET_LOG_INFO(...) LOG_INFO(NET_LOGGER(), ##__VA_ARGS__)
+#define NET_LOG_WARN(...) LOG_WARN(NET_LOGGER(), ##__VA_ARGS__)
+#define NET_LOG_ERROR(...) LOG_ERROR(NET_LOGGER(), ##__VA_ARGS__)
+#define NET_LOG_FATAL(...) LOG_FATAL(NET_LOGGER(), ##__VA_ARGS__)
 
 namespace net
 {
@@ -22,18 +25,12 @@ namespace net
     {
     public:
         static Log &instance();
-        logger::Logger::ptr getLogger()
-        {
-            return m_logger;
-        }
+        logger::Logger::ptr getLogger();
 
     private:
         Log();
         Log(const Log &) = delete;
         Log &operator=(const Log &) = delete;
-
-    private:
-        logger::Logger::ptr m_logger;
     };
 
 }

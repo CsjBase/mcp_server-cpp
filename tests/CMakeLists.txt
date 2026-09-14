@@ -27,4 +27,7 @@ add_subdirectory(config)
 add_executable(ctest test.cc)
 target_link_libraries(ctest PUBLIC nlohmann_json::nlohmann_json)
 
+add_executable(test_config_logger test_config_logger.cc)
+target_link_libraries(test_config_logger PUBLIC csj_log csj_net)
+
 

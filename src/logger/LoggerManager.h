@@ -46,6 +46,7 @@ namespace logger
         void flush_all();
 
         void shutdown();
+        std::string toJsonString() const;
 
     private:
         LoggerManager();
@@ -53,7 +54,7 @@ namespace logger
         void add_logger_(std::shared_ptr<Logger> new_logger);
 
     private:
-        std::mutex logger_map_mutex_;
+        mutable std::mutex logger_map_mutex_;
         std::shared_ptr<Logger> default_logger_;
         std::unique_ptr<LogFormatter> formatter_;
         LogLevel global_log_level_ = LogLevel::Info;

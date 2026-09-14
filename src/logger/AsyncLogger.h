@@ -32,6 +32,8 @@ namespace logger
                     AsyncOverflowStrategy overflow_strategy = AsyncOverflowStrategy::Block);
 
         std::shared_ptr<Logger> clone(std::string new_name) override;
+        nlohmann::json toJson() const override;
+        std::string toJsonString() const override;
 
     protected:
         void sink_it_(const details::LogEvent &) override;

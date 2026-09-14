@@ -18,6 +18,8 @@ namespace logger
         void flush() override;
         void set_pattern(const std::string &pattern) override;
         void set_formatter(std::unique_ptr<LogFormatter> formatter) override;
+        nlohmann::json toJson() const override;
+        std::string toJsonString() const override;
 
     protected:
         std::unique_ptr<LogFormatter> formatter_;
@@ -74,6 +76,29 @@ namespace logger
     {
         std::lock_guard<mutex_t> lock(mutex_);
         formatter_ = std::move(formatter);
+    }
+
+    template <typename ConsoleMutex>
+    nlohmann::json StdoutLogSinkBase<ConsoleMutex>::toJson() const
+    {
+        const std::string_view typeName = []
+        {if constexpr (std::is_same_v<ConsoleMutex, ConsoleNullMutex>)
+        {
+            return "stdout_st";
+        }
+        else
+        {
+            return "stdout_mt";
+        } }();
+        std::lock_guard<mutex_t> lock(mutex_);
+        return nlohmann::json{{"type", typeName},
+                              {"level", to_string_view(level_)},
+                              {"pattern", formatter_->get_pattern()}};
+    }
+    template <typename ConsoleMutex>
+    std::string StdoutLogSinkBase<ConsoleMutex>::toJsonString() const
+    {
+        return toJson().dump();
     }
 
     template <typename ConsoleMutex>

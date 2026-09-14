@@ -4,6 +4,7 @@
 #include <utility>
 #include <iostream>
 #include <mutex>
+#include <nlohmann/json.hpp>
 
 namespace logger
 {
@@ -108,6 +109,21 @@ namespace logger
     void Logger::set_error_handler(ErrHandler handler)
     {
         err_handler_ = std::move(handler);
+    }
+
+    nlohmann::json Logger::toJson() const
+    {
+        nlohmann::json json{{"name", name_}, {"logger_type", "sync"}};
+        for (auto &sink : sinks_)
+        {
+            json["sinks"].push_back(sink->toJson());
+        }
+        return json;
+    }
+
+    std::string Logger::toJsonString() const
+    {
+        return toJson().dump();
     }
 
     void Logger::sink_it_(const details::LogEvent &event)

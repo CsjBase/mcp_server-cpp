@@ -37,7 +37,7 @@ namespace net
 
     void EventLoopThread::threadFunc()
     {
-        LOG_DEBUG("{} start.", m_thread.name());
+        NET_LOG_DEBUG("{} start.", m_thread.name());
         EventLoop loop; // 创建一个独立的eventLoop，和上面的线程是一一对应的，one loop per pthread
 
         if (m_callback)

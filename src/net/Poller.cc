@@ -32,7 +32,7 @@ namespace net
     {
         if (m_epollfd < 0)
         {
-            LOG_FATAL("epoll_create error! errno:{} errstr:{}", errno, strerror(errno));
+            NET_LOG_FATAL("epoll_create error! errno:{} errstr:{}", errno, strerror(errno));
         }
     }
 
@@ -57,14 +57,14 @@ namespace net
         }
         else if (numEvents == 0)
         {
-            // CSJ_LOG_ERROR(g_logger) << "EPollPoller::poll timeout. nothing happened";
+            // NET_LOG_ERROR(g_logger) << "EPollPoller::poll timeout. nothing happened";
         }
         else
         {
             if (saveErrno != EINTR)
             {
                 errno = saveErrno;
-                LOG_ERROR("EPollPoller::poll() err! errno:{} errstr:{}", saveErrno, strerror(saveErrno));
+                NET_LOG_ERROR("EPollPoller::poll() err! errno:{} errstr:{}", saveErrno, strerror(saveErrno));
             }
         }
         return now;
@@ -139,11 +139,11 @@ namespace net
         {
             if (operation == EPOLL_CTL_DEL)
             {
-                LOG_ERROR("epoll_ctl del error! errno:{} errstr:", errno, strerror(errno));
+                NET_LOG_ERROR("epoll_ctl del error! errno:{} errstr:", errno, strerror(errno));
             }
             else
             {
-                LOG_ERROR("epoll_ctl add/modify error! errno:{} errstr:", errno, strerror(errno));
+                NET_LOG_ERROR("epoll_ctl add/modify error! errno:{} errstr:", errno, strerror(errno));
             }
         }
     }
@@ -168,14 +168,14 @@ namespace net
         }
         else if (numEvents == 0)
         {
-            LOG_DEBUG("PollPoller::poll timeout. nothing happened");
+            NET_LOG_DEBUG("PollPoller::poll timeout. nothing happened");
         }
         else
         {
             if (saveErrno != EINTR)
             {
                 errno = saveErrno;
-                LOG_ERROR("PollPoller::poll() err! errno::{} errstr:", saveErrno, strerror(saveErrno));
+                NET_LOG_ERROR("PollPoller::poll() err! errno::{} errstr:", saveErrno, strerror(saveErrno));
             }
         }
         return now;
@@ -280,14 +280,14 @@ namespace net
         }
         else if (numEvents == 0)
         {
-            // CSJ_LOG_ERROR(g_logger) << "SelectPoller::poll timeout. nothing happened";
+            // CSJ_NET_LOG_ERROR(g_logger) << "SelectPoller::poll timeout. nothing happened";
         }
         else
         {
             if (saveErrno != EINTR)
             {
                 errno = saveErrno;
-                LOG_ERROR("SelectPoller::poll() err! errno:{} errstr:{}", saveErrno, strerror(saveErrno));
+                NET_LOG_ERROR("SelectPoller::poll() err! errno:{} errstr:{}", saveErrno, strerror(saveErrno));
             }
         }
         return now;

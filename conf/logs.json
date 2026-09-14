@@ -1,0 +1,28 @@
+{
+    "logs": {
+        "net": {
+            "name": "net",
+            "logger_type": "async",
+            "sinks": [
+                {
+                    "type": "rotatingfile_mt",
+                    "level": "debug",
+                    "pattern": "[%Y-%m-%d %H:%M:%S.%e] [%t] [%n] [%^%l%$] [%s:%#] %v",
+                    "file": "logs/net.log",
+                    "max_files": 10,
+                    "max_size": 1048576
+                }
+            ]
+        },
+        "default": {
+            "name": "default",
+            "logger_type": "async",
+            "sinks": [
+                {
+                    "type": "stdout_color_mt",
+                    "level": "info"
+                }
+            ]
+        }
+    }
+}

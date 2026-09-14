@@ -18,6 +18,7 @@
 
 #define LOGGER_DEFAULT() logger::LoggerManager::instance().get_default_logger()
 #define LOGGER_NAME(name) logger::LoggerManager::instance().get_logger(name)
+#define LOG_THREAD_POOL() logger::LoggerManager::instance().get_thread_pool()
 
 namespace logger
 {

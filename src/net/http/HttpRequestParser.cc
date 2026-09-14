@@ -59,7 +59,7 @@ namespace net
 
             if (m == HttpMethod::INVALID_METHOD)
             {
-                LOG_WARN("invalid http request method: {}", std::string(at, length));
+                NET_LOG_WARN("invalid http request method: {}", std::string(at, length));
                 parser->setError(1000);
                 return;
             }
@@ -102,7 +102,7 @@ namespace net
             }
             else
             {
-                LOG_WARN("invalid http request version: {}", std::string(at, length));
+                NET_LOG_WARN("invalid http request version: {}", std::string(at, length));
                 parser->setError(1001);
                 return;
             }
@@ -119,7 +119,7 @@ namespace net
             HttpRequestParser *parser = static_cast<HttpRequestParser *>(data);
             if (flen == 0)
             {
-                LOG_WARN("invalid http request field length == 0");
+                NET_LOG_WARN("invalid http request field length == 0");
                 // parser->setError(1002);
                 return;
             }

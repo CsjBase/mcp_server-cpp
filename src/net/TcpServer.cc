@@ -9,7 +9,7 @@ namespace net
     {
         if (loop == nullptr)
         {
-            LOG_FATAL("mainloop is null!");
+            NET_LOG_FATAL("mainloop is null!");
         }
         return loop;
     }
@@ -58,7 +58,7 @@ namespace net
         ss << m_name << "-" << m_ipPort << "-" << m_nextConnId;
         ++m_nextConnId;
         std::string connName = ss.str();
-        LOG_DEBUG("new connection [{}]  from {}", connName, peerAddr->to_string());
+        NET_LOG_DEBUG("new connection [{}]  from {}", connName, peerAddr->to_string());
 
         // 通过sockfd获取其绑定的本机的IP地址和端口信息
         sockaddr_storage local;
@@ -66,7 +66,7 @@ namespace net
         socklen_t addrLen = sizeof local;
         if (::getsockname(sockfd, (sockaddr *)&local, &addrLen) < 0)
         {
-            LOG_ERROR("sockets::getLocalAddr");
+            NET_LOG_ERROR("sockets::getLocalAddr");
         }
 
         Address::ptr localAddr = Address::create(local, addrLen);
@@ -95,7 +95,7 @@ namespace net
     {
         m_loop->assertInLoopThread();
 
-        LOG_DEBUG("connection [{}] close.", conn->name());
+        NET_LOG_DEBUG("connection [{}] close.", conn->name());
 
         m_connections.erase(conn->name());
 

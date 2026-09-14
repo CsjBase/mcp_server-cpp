@@ -59,7 +59,7 @@ namespace net
         }
         else
         {
-            LOG_ERROR("do not connect:{}", m_serverAddr->to_string());
+            NET_LOG_ERROR("do not connect:{}", m_serverAddr->to_string());
         }
     }
 
@@ -112,12 +112,12 @@ namespace net
         case EBADF:
         case EFAULT:
         case ENOTSOCK:
-            LOG_ERROR("connect error. errno={} errstr={}", savedErrno, strerror(savedErrno));
+            NET_LOG_ERROR("connect error. errno={} errstr={}", savedErrno, strerror(savedErrno));
             ::close(sockfd);
             break;
 
         default:
-            LOG_ERROR("Unexpected error. errno={} errstr={}", savedErrno, strerror(savedErrno));
+            NET_LOG_ERROR("Unexpected error. errno={} errstr={}", savedErrno, strerror(savedErrno));
             ::close(sockfd);
             // connectErrorCallback_();
             break;
@@ -169,12 +169,12 @@ namespace net
             int err = getSocketError(sockfd);
             if (err)
             {
-                LOG_WARN("Connector::handleWrite - SO_ERROR. errno={} errstr={}", err, strerror(err));
+                NET_LOG_WARN("Connector::handleWrite - SO_ERROR. errno={} errstr={}", err, strerror(err));
                 retry(sockfd);
             }
             else if (isSelfConnect(sockfd))
             {
-                LOG_WARN("Self connect");
+                NET_LOG_WARN("Self connect");
                 retry(sockfd);
             }
             else
@@ -196,19 +196,19 @@ namespace net
             // what happened?
             // assert(state_ == kDisconnected);
             if (m_state != State::kDisconnected)
-                LOG_DEBUG("state_ != kDisconnected");
+                NET_LOG_DEBUG("state_ != kDisconnected");
         }
     }
 
     void Connector::handleError()
     {
-        LOG_DEBUG("Connector::handleError state={}", stateToString());
+        NET_LOG_DEBUG("Connector::handleError state={}", stateToString());
         if (m_state == State::kConnecting)
         {
             int sockfd = removeAndResetChannel();
             int err = getSocketError(sockfd);
-            LOG_DEBUG("SO_ERROR errno={} errstr={}", err, strerror(err));
-            LOG_ERROR("Connector::handleError state={}", stateToString());
+            NET_LOG_DEBUG("SO_ERROR errno={} errstr={}", err, strerror(err));
+            NET_LOG_ERROR("Connector::handleError state={}", stateToString());
             retry(sockfd);
         }
     }
@@ -219,7 +219,7 @@ namespace net
         setState(State::kDisconnected);
         if (m_connect)
         {
-            // LOG_INFO("Connector::retry - Retry connecting to {} in {} milliseconds", m_serverAddr->to_string(), m_retryDelayMs);
+            // NET_LOG_INFO("Connector::retry - Retry connecting to {} in {} milliseconds", m_serverAddr->to_string(), m_retryDelayMs);
             //  loop_->runAfter(retryDelayMs_/1000.0,
             //                  std::bind(&Connector::startInLoop, shared_from_this()));
             //  retryDelayMs_ = std::min(retryDelayMs_ * 2, kMaxRetryDelayMs);
@@ -234,7 +234,7 @@ namespace net
         }
         else
         {
-            LOG_DEBUG("do not connect");
+            NET_LOG_DEBUG("do not connect");
         }
     }
 

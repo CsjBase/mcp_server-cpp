@@ -1,6 +1,8 @@
 #include "logger/AsyncLogger.h"
 #include "logger/LogEventBuffer.h"
 
+#include <nlohmann/json.hpp>
+
 namespace logger
 {
     AsyncLogger::AsyncLogger(
@@ -23,6 +25,21 @@ namespace logger
         auto cloned = std::make_shared<AsyncLogger>(*this);
         cloned->name_ = std::move(new_name);
         return cloned;
+    }
+
+    nlohmann::json AsyncLogger::toJson() const
+    {
+        nlohmann::json json{{"name", name_}, {"logger_type", "async"}};
+        for (auto &sink : sinks_)
+        {
+            json["sinks"].push_back(sink->toJson());
+        }
+        return json;
+    }
+
+    std::string AsyncLogger::toJsonString() const
+    {
+        return toJson().dump();
     }
 
     void AsyncLogger::sink_it_(const details::LogEvent &event)

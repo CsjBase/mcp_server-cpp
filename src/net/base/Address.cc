@@ -155,7 +155,7 @@ namespace net
         // 检查路径长度是否超出限制
         if (path_len > MAX_PATH_LEN)
         {
-            LOG_ERROR("Unix socket path too long: {} bytes (max: {})", std::to_string(path_len), std::to_string(MAX_PATH_LEN));
+            NET_LOG_ERROR("Unix socket path too long: {} bytes (max: {})", std::to_string(path_len), std::to_string(MAX_PATH_LEN));
             return;
         }
 
@@ -184,7 +184,7 @@ namespace net
         // 安全检查：确保m_length不超过结构体大小
         if (m_length > sizeof(m_addr))
         {
-            LOG_ERROR("Internal error: calculated length exceeds sockaddr_un size");
+            NET_LOG_ERROR("Internal error: calculated length exceeds sockaddr_un size");
         }
     }
 
@@ -194,22 +194,22 @@ namespace net
         // 验证输入参数
         if (addr.sun_family != AF_UNIX)
         {
-            LOG_ERROR("Invalid address family: expected AF_UNIX ({}), got {}",
-                      std::to_string(AF_UNIX), std::to_string(addr.sun_family));
+            NET_LOG_ERROR("Invalid address family: expected AF_UNIX ({}), got {}",
+                          std::to_string(AF_UNIX), std::to_string(addr.sun_family));
         }
 
         // 验证长度参数
         if (len < offsetof(struct sockaddr_un, sun_path))
         {
-            LOG_ERROR("Invalid length: too short for sockaddr_un ({} < {})",
-                      std::to_string(len), std::to_string(offsetof(struct sockaddr_un, sun_path)));
+            NET_LOG_ERROR("Invalid length: too short for sockaddr_un ({} < {})",
+                          std::to_string(len), std::to_string(offsetof(struct sockaddr_un, sun_path)));
             return;
         }
 
         if (len > sizeof(sockaddr_un))
         {
-            LOG_ERROR("Invalid length: exceeds sockaddr_un size ({} > {})",
-                      std::to_string(len), std::to_string(sizeof(sockaddr_un)));
+            NET_LOG_ERROR("Invalid length: exceeds sockaddr_un size ({} > {})",
+                          std::to_string(len), std::to_string(sizeof(sockaddr_un)));
             return;
         }
 
@@ -242,8 +242,8 @@ namespace net
             // 检查路径长度是否超限
             if (path_len > MAX_PATH_LEN)
             {
-                LOG_ERROR("Path length exceeds maximum: {} > {}",
-                          std::to_string(path_len), std::to_string(MAX_PATH_LEN));
+                NET_LOG_ERROR("Path length exceeds maximum: {} > {}",
+                              std::to_string(path_len), std::to_string(MAX_PATH_LEN));
                 return;
             }
         }

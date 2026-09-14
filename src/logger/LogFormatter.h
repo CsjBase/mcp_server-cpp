@@ -32,6 +32,10 @@ namespace logger
         std::unique_ptr<LogFormatter> clone() const;
         void format(const details::LogEvent &event, memory_buf_t &dest);
         void set_pattern(std::string pattern);
+        std::string get_pattern() const
+        {
+            return pattern_;
+        }
 
     private:
         std::string pattern_;

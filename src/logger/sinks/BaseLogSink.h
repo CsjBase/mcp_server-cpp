@@ -28,7 +28,7 @@ namespace logger
     protected:
         // sink formatter
         std::unique_ptr<LogFormatter> formatter_;
-        Mutex mutex_;
+        mutable Mutex mutex_;
 
         virtual void sink_it_(const details::LogEvent &msg) = 0;
         virtual void flush_() = 0;

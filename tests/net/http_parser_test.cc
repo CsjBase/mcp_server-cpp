@@ -12,11 +12,11 @@ void test_request()
     net::http::HttpRequestParser parser;
     std::string tmp(test_request_data);
     size_t s = parser.execute(&tmp[0], tmp.size());
-    LOG_ERROR("execute rt={} has_error={} is_finished={} total={} content_length={}", s, parser.hasError(), parser.isFinished(), tmp.size(), parser.getContentLength());
+    NET_LOG_ERROR("execute rt={} has_error={} is_finished={} total={} content_length={}", s, parser.hasError(), parser.isFinished(), tmp.size(), parser.getContentLength());
     tmp.resize(tmp.size() - s);
-    LOG_INFO(parser.getData()->toString());
-    LOG_INFO(parser.getData()->getPath());
-    LOG_INFO(tmp);
+    NET_LOG_INFO(parser.getData()->toString());
+    NET_LOG_INFO(parser.getData()->getPath());
+    NET_LOG_INFO(tmp);
 }
 
 const char test_response_data[] = "HTTP/1.1 200 OK\r\n"
@@ -39,18 +39,18 @@ void test_response()
     net::http::HttpResponseParser parser;
     std::string tmp = test_response_data;
     size_t s = parser.execute(&tmp[0], tmp.size(), true);
-    LOG_ERROR("execute rt={} has_error={} is_finished={} total={} content_length={} tmp[s]={}", s, parser.hasError(), parser.isFinished(), tmp.size(), parser.getContentLength(), tmp[s]);
+    NET_LOG_ERROR("execute rt={} has_error={} is_finished={} total={} content_length={} tmp[s]={}", s, parser.hasError(), parser.isFinished(), tmp.size(), parser.getContentLength(), tmp[s]);
 
     tmp.resize(tmp.size() - s);
 
-    LOG_INFO(parser.getData()->toString());
-    LOG_INFO(tmp);
+    NET_LOG_INFO(parser.getData()->toString());
+    NET_LOG_INFO(tmp);
 }
 
 int main(int argc, char **argv)
 {
     test_request();
-    LOG_INFO("--------------");
+    NET_LOG_INFO("--------------");
     test_response();
     return 0;
 }

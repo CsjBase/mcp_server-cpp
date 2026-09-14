@@ -13,7 +13,7 @@ namespace net
                                        TFD_NONBLOCK | TFD_CLOEXEC);
         if (timerfd < 0)
         {
-            LOG_FATAL("Failed in timerfd_create");
+            NET_LOG_FATAL("Failed in timerfd_create");
         }
         return timerfd;
     }
@@ -44,7 +44,7 @@ namespace net
         int ret = ::timerfd_settime(timerfd, 0, &newValue, &oldValue);
         if (ret)
         {
-            LOG_ERROR("timerfd_settime()");
+            NET_LOG_ERROR("timerfd_settime()");
         }
     }
 
@@ -52,10 +52,10 @@ namespace net
     {
         uint64_t howmany;
         ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
-        LOG_TRACE("TimerManager::handleRead() {} at {}", howmany, now.toString());
+        NET_LOG_TRACE("TimerManager::handleRead() {} at {}", howmany, now.toString());
         if (n != sizeof howmany)
         {
-            LOG_ERROR("TimerManager::handleRead() reads {} bytes instead of 8", n);
+            NET_LOG_ERROR("TimerManager::handleRead() reads {} bytes instead of 8", n);
         }
     }
 

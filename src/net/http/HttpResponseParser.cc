@@ -73,7 +73,7 @@ namespace net
             }
             else
             {
-                LOG_WARN("invalid http response version: {}", std::string(at, length));
+                NET_LOG_WARN("invalid http response version: {}", std::string(at, length));
                 parser->setError(1001);
                 return;
             }
@@ -94,7 +94,7 @@ namespace net
             HttpResponseParser *parser = static_cast<HttpResponseParser *>(data);
             if (flen == 0)
             {
-                LOG_WARN("invalid http response field length == 0");
+                NET_LOG_WARN("invalid http response field length == 0");
                 // parser->setError(1002);
                 return;
             }

@@ -4,6 +4,7 @@
 #include "logger/LogFormatter.h"
 
 #include <string>
+#include <nlohmann/json.hpp>
 
 namespace logger
 {
@@ -18,6 +19,9 @@ namespace logger
         void set_level(LogLevel level);
         LogLevel get_level() const;
         bool should_log(LogLevel level) const;
+
+        virtual nlohmann::json toJson() const = 0;
+        virtual std::string toJsonString() const = 0;
 
     protected:
         level_t level_{LogLevel::Trace};

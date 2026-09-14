@@ -47,10 +47,10 @@ namespace net
         }
         else
         {
-            LOG_ERROR("listen socket create err! errno={} errstr={}", errno, strerror(errno));
+            NET_LOG_ERROR("listen socket create err! errno={} errstr={}", errno, strerror(errno));
             if (errno == EMFILE)
             {
-                LOG_ERROR("socket reached limit!");
+                NET_LOG_ERROR("socket reached limit!");
             }
         }
     }

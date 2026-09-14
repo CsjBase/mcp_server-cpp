@@ -7,6 +7,7 @@
 #include <vector>
 #include <fmt/format.h>
 #include <functional>
+#include <nlohmann/json.hpp>
 
 #include "logger/sinks/LogSink.h"
 
@@ -76,6 +77,9 @@ namespace logger
         void set_flush_level(LogLevel level);
         LogLevel flush_level() const;
         void set_error_handler(ErrHandler handler);
+
+        virtual nlohmann::json toJson() const;
+        virtual std::string toJsonString() const;
 
         template <typename... Args>
         void log(LogLevel lvl, fmt::format_string<Args...> fmt, Args &&...args)
