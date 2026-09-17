@@ -13,6 +13,10 @@
     XX(STDOUT_ST, stdout_st, 9)              \
     XX(STDOUT_COLOR_MT, stdout_color_mt, 15) \
     XX(STDOUT_COLOR_ST, stdout_color_st, 15) \
+    XX(STDERR_MT, stderr_mt, 9)              \
+    XX(STDERR_ST, stderr_st, 9)              \
+    XX(STDERR_COLOR_MT, stderr_color_mt, 15) \
+    XX(STDERR_COLOR_ST, stderr_color_st, 15) \
     XX(BASICFILE_MT, basicfile_mt, 12)       \
     XX(BASICFILE_ST, basicfile_st, 12)       \
     XX(DAILYFILE_MT, dailyfile_mt, 12)       \

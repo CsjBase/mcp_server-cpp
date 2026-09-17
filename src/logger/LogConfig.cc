@@ -130,6 +130,18 @@ namespace logger
             case LogSinkConfig::Type::STDOUT_COLOR_ST:
                 sink = std::make_shared<StdoutColorLogSinkST>();
                 break;
+            case LogSinkConfig::Type::STDERR_MT:
+                sink = std::make_shared<StderrLogSinkMT>();
+                break;
+            case LogSinkConfig::Type::STDERR_ST:
+                sink = std::make_shared<StderrLogSinkST>();
+                break;
+            case LogSinkConfig::Type::STDERR_COLOR_MT:
+                sink = std::make_shared<StderrColorLogSinkMT>();
+                break;
+            case LogSinkConfig::Type::STDERR_COLOR_ST:
+                sink = std::make_shared<StderrColorLogSinkST>();
+                break;
             case LogSinkConfig::Type::BASICFILE_MT:
                 sink = std::make_shared<BasicFileLogSinkMT>(config.file);
                 break;
