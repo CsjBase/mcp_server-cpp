@@ -1,5 +1,5 @@
 #include "HttpServer.h"
-#include "HttpSession.h"
+#include "HttpContext.h"
 
 namespace net
 {
@@ -32,14 +32,14 @@ namespace net
         {
             if (conn->connected())
             {
-                conn->setContext(HttpSession());
+                conn->setContext(std::make_shared<HttpContext>());
             }
         }
         void HttpServer::onMessage(const TcpConnection::ptr &conn,
                                    Buffer *buf,
                                    Timestamp receiveTime)
         {
-            HttpSession *session = std::any_cast<HttpSession>(conn->getMutableContext());
+            HttpContext::ptr session = std::any_cast<HttpContext::ptr>(conn->getContext());
             if (!session->parseRequest(buf))
             {
                 conn->send("HTTP/1.1 400 Bad Request\r\n\r\n");

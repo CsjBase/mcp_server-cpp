@@ -1,19 +1,13 @@
-#include "HttpSession.h"
+#include "HttpContext.h"
 #include "net/Buffer.h"
 
 namespace net::http
 {
 
-    bool HttpSession::parseRequest(Buffer *buf)
+    bool HttpContext::parseRequest(Buffer *buf)
     {
         uint64_t maxBufferSize = HttpRequestParser::GetHttpRequestBufferSize();
         uint64_t bufferSize = buf->readableBytes() > maxBufferSize ? maxBufferSize : buf->readableBytes();
-
-        if (m_state == HttpRequestParseState::kExpectInit)
-        {
-            m_parser = std::make_shared<HttpRequestParser>();
-            m_state = HttpRequestParseState::kExpectHeaders;
-        }
 
         if (m_state == HttpRequestParseState::kExpectHeaders)
         {

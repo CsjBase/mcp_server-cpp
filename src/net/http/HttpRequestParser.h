@@ -17,12 +17,14 @@ namespace net
         {
         public:
             /// HTTP解析类的智能指针
-            typedef std::shared_ptr<HttpRequestParser> ptr;
+            typedef std::unique_ptr<HttpRequestParser> ptr;
 
             /**
              * @brief 构造函数
              */
             HttpRequestParser();
+            HttpRequestParser(const HttpRequestParser &) = delete;
+            HttpRequestParser &operator=(const HttpRequestParser &) = delete;
 
             /**
              * @brief 解析协议
@@ -64,6 +66,8 @@ namespace net
              * @brief 获取http_parser结构体
              */
             const http_parser &getParser() const { return m_parser; }
+
+            void reset();
 
         public:
             /**

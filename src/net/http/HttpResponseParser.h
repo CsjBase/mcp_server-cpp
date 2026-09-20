@@ -17,12 +17,14 @@ namespace net
         {
         public:
             /// 智能指针类型
-            typedef std::shared_ptr<HttpResponseParser> ptr;
+            typedef std::unique_ptr<HttpResponseParser> ptr;
 
             /**
              * @brief 构造函数
              */
             HttpResponseParser();
+            HttpResponseParser(const HttpResponseParser &) = delete;
+            HttpResponseParser &operator=(const HttpResponseParser &) = delete;
 
             /**
              * @brief 解析HTTP响应协议
@@ -63,6 +65,8 @@ namespace net
              * @brief 返回httpclient_parser
              */
             const httpclient_parser &getParser() const { return m_parser; }
+
+            void reset();
 
         public:
             /**

@@ -127,8 +127,18 @@ namespace net
         }
 
         HttpRequestParser::HttpRequestParser()
-            : m_error(0)
         {
+            reset();
+        }
+
+        uint64_t HttpRequestParser::getContentLength()
+        {
+            return m_data->getHeaderAs<uint64_t>("content-length", 0);
+        }
+
+        void HttpRequestParser::reset()
+        {
+            m_error = 0;
             m_data.reset(new net::http::HttpRequest);
             http_parser_init(&m_parser);
             m_parser.request_method = on_request_method;
@@ -140,11 +150,6 @@ namespace net
             m_parser.header_done = on_request_header_done;
             m_parser.http_field = on_request_http_field;
             m_parser.data = this;
-        }
-
-        uint64_t HttpRequestParser::getContentLength()
-        {
-            return m_data->getHeaderAs<uint64_t>("content-length", 0);
         }
 
         // 1: 成功

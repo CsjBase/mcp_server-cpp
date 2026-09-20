@@ -102,18 +102,8 @@ namespace net
         }
 
         HttpResponseParser::HttpResponseParser()
-            : m_error(0)
         {
-            m_data.reset(new net::http::HttpResponse);
-            httpclient_parser_init(&m_parser);
-            m_parser.reason_phrase = on_response_reason;
-            m_parser.status_code = on_response_status;
-            m_parser.chunk_size = on_response_chunk;
-            m_parser.http_version = on_response_version;
-            m_parser.header_done = on_response_header_done;
-            m_parser.last_chunk = on_response_last_chunk;
-            m_parser.http_field = on_response_http_field;
-            m_parser.data = this;
+            reset();
         }
 
         size_t HttpResponseParser::execute(char *data, size_t len, bool chunck)
@@ -141,6 +131,21 @@ namespace net
         uint64_t HttpResponseParser::getContentLength()
         {
             return m_data->getHeaderAs<uint64_t>("content-length", 0);
+        }
+
+        void HttpResponseParser::reset()
+        {
+            m_error = 0;
+            m_data.reset(new net::http::HttpResponse);
+            httpclient_parser_init(&m_parser);
+            m_parser.reason_phrase = on_response_reason;
+            m_parser.status_code = on_response_status;
+            m_parser.chunk_size = on_response_chunk;
+            m_parser.http_version = on_response_version;
+            m_parser.header_done = on_response_header_done;
+            m_parser.last_chunk = on_response_last_chunk;
+            m_parser.http_field = on_response_http_field;
+            m_parser.data = this;
         }
 
     }

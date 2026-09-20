@@ -11,21 +11,27 @@ namespace net
     class Buffer;
     namespace http
     {
-        class HttpSession
+        class HttpContext
         {
         public:
             /// 智能指针类型定义
-            typedef std::shared_ptr<HttpSession> ptr;
+            typedef std::shared_ptr<HttpContext> ptr;
 
             enum class HttpRequestParseState
             {
-                kExpectInit,
                 kExpectHeaders,
                 kExpectBody,
                 kGotAll,
             };
 
-            HttpSession() : m_state(HttpRequestParseState::kExpectInit) {}
+            HttpContext()
+                : m_state(HttpRequestParseState::kExpectHeaders),
+                  m_parser(new HttpRequestParser)
+            {
+            }
+
+            HttpContext(const HttpContext &) = delete;
+            HttpContext &operator=(const HttpContext &) = delete;
 
             bool parseRequest(Buffer *);
             bool gotAll() const
@@ -34,14 +40,15 @@ namespace net
             }
             void reset()
             {
-                m_state = HttpRequestParseState::kExpectInit;
-                m_parser = nullptr;
+                m_state = HttpRequestParseState::kExpectHeaders;
+                m_parser->reset();
             }
 
-            HttpRequest::ptr getRequest() const
+            HttpRequest::ptr getRequest()
             {
-                if (m_parser)
+                if (!m_parser->hasError() && m_parser->isFinished())
                 {
+                    m_parser->getData()->init();
                     return m_parser->getData();
                 }
                 return nullptr;
