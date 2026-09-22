@@ -52,9 +52,18 @@ void from_json(const json &j, A &a)
 
 int main()
 {
-    json j = A{1, "2", {3, 4, 5}};
-    A a = {0, "", {0}};
-    A tmp = a;
-    a = j;
-    j = tmp;
+    // json j = {{"params", {{"_meta", {{"io.modelcontextprotocol/protocolVersion", 11}}}}}};
+    // // json j = {{"io.modelcontextprotocol/protocolVersion", "1.0.0"}};
+    // if (j.contains("params") && j["params"].contains("_meta") &&
+    //     j["params"]["_meta"].contains("io.modelcontextprotocol/protocolVersion") &&
+    //     j["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"].is_string())
+    // {
+    //     std::cout << j["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"].get<std::string>() << std::endl;
+    //     std::cout << j.dump(4) << std::endl;
+    // }
+    json j = nullptr;
+    if (j.is_null())
+    {
+        std::cout << "null" << std::endl;
+    }
 }

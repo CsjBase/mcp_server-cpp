@@ -27,7 +27,7 @@ namespace net
              * @param[in] version 版本
              * @param[in] close 是否keepalive
              */
-            HttpRequest(uint8_t version = 0x11, bool close = true);
+            HttpRequest(uint8_t version = 0x11, bool close = false);
 
             std::shared_ptr<HttpResponse> createResponse();
 

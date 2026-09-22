@@ -21,6 +21,11 @@ namespace net
         {
         }
 
+        bool valid() const
+        {
+            return timer_ != nullptr;
+        }
+
         // default copy-ctor, dtor and assignment are okay
 
         friend class TimerManager;

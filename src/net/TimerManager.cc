@@ -130,8 +130,8 @@ namespace net
             RawEntry entry(it->first->expiration(), it->first);
             activeTimers_.erase(it);
             auto erase_it = timers_.find(entry);
-            erase_it = timers_.erase(erase_it);
             assert(erase_it != timers_.end());
+            timers_.erase(erase_it);
             // assert(n == 1);
             // (void)n;
             // delete it->first; // FIXME: no delete please //use unique_ptr
