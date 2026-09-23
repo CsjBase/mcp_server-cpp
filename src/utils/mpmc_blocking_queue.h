@@ -101,6 +101,8 @@ namespace utils
     template <typename T>
     bool mpmc_blocking_queue<T>::enqueue(const T &item)
     {
+        if (is_stopped_())
+            return false;
         {
             std::unique_lock<std::mutex> lock(mutex_);
             not_full_cv_.wait(lock, [this]
@@ -116,6 +118,8 @@ namespace utils
     template <typename T>
     bool mpmc_blocking_queue<T>::enqueue(T &&item)
     {
+        if (is_stopped_())
+            return false;
         {
             std::unique_lock<std::mutex> lock(mutex_);
             not_full_cv_.wait(lock, [this]
@@ -131,6 +135,8 @@ namespace utils
     template <typename T>
     bool mpmc_blocking_queue<T>::enqueue_overwrite(const T &item)
     {
+        if (is_stopped_())
+            return false;
         {
             std::lock_guard<std::mutex> lock(mutex_);
             if (is_stopped_())
@@ -144,6 +150,8 @@ namespace utils
     template <typename T>
     bool mpmc_blocking_queue<T>::enqueue_overwrite(T &&item)
     {
+        if (is_stopped_())
+            return false;
         {
             std::lock_guard<std::mutex> lock(mutex_);
             if (is_stopped_())
@@ -157,6 +165,8 @@ namespace utils
     template <typename T>
     bool mpmc_blocking_queue<T>::try_enqueue(const T &item)
     {
+        if (is_stopped_())
+            return false;
         {
             std::lock_guard<std::mutex> lock(mutex_);
             if (queue_.full() || is_stopped_())
@@ -174,6 +184,8 @@ namespace utils
     template <typename T>
     bool mpmc_blocking_queue<T>::try_enqueue(T &&item)
     {
+        if (is_stopped_())
+            return false;
         {
             std::lock_guard<std::mutex> lock(mutex_);
             if (queue_.full() || is_stopped_())

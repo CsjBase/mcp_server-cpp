@@ -1,7 +1,7 @@
 // src/main.cpp
 #include "mcp/transport/StreamableHttpServer.h"
 #include "mcp/json_rpc/MethodDispatcher.h"
-#include "mcp/McpMethodHandlers.h"
+#include "mcp/server/McpMethodHandlers.h"
 
 int main()
 {
@@ -23,7 +23,9 @@ int main()
             ctx.report_progress(0.0, 1.0, "Starting...");
             // ... 业务逻辑 ...
             ctx.report_progress(1.0, 1.0, "Done");
-            return nlohmann::json{{{"type", "text"}, {"text", args["text"]}}};
+            mcp::ToolResult result;
+            result.content = nlohmann::json{{{"type", "text"}, {"text", args["text"]}}};
+            return result;
         }));
 
     // 启动 HTTP 服务器

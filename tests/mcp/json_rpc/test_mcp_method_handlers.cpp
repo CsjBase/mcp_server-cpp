@@ -1,6 +1,6 @@
 #include "test_helpers.h"
 #include "mcp/json_rpc/MethodDispatcher.h"
-#include "mcp/McpMethodHandlers.h"
+#include "mcp/server/McpMethodHandlers.h"
 
 using namespace mcp;
 using json = nlohmann::json;
@@ -19,7 +19,7 @@ protected:
     }
 
     void register_echo_tool(
-        std::function<json(const json &, IRequestContext &)> exec)
+        std::function<ToolResult(const json &, IRequestContext &)> exec)
     {
         handlers->register_tool(ToolDescriptor::make(
             "echo", "Echoes input",
@@ -78,7 +78,9 @@ TEST_F(ToolsCallTest, RejectsUnknownTool)
 TEST_F(ToolsCallTest, RejectsSchemaViolation)
 {
     register_echo_tool([](const json &, IRequestContext &)
-                       { return json::array(); });
+                       { ToolResult r;
+                        r.content = json::array();
+                        return r; });
 
     // 缺少 required 的 text 字段
     auto resp = dispatch(make_call(json::object()));
@@ -89,7 +91,9 @@ TEST_F(ToolsCallTest, RejectsSchemaViolation)
 TEST_F(ToolsCallTest, RejectsWrongArgumentType)
 {
     register_echo_tool([](const json &, IRequestContext &)
-                       { return json::array(); });
+                       { ToolResult r;
+                        r.content = json::array();
+                        return r; });
 
     auto resp = dispatch(make_call(json{{"text", 42}}));
     EXPECT_EQ(resp["error"]["code"], -32602);
@@ -99,7 +103,9 @@ TEST_F(ToolsCallTest, RejectsWrongArgumentType)
 TEST_F(ToolsCallTest, SuccessfulExecution)
 {
     register_echo_tool([](const json &args, IRequestContext &)
-                       { return json::array({{{"type", "text"}, {"text", args["text"]}}}); });
+                       { ToolResult r;
+                        r.content = json::array({{{"type", "text"}, {"text", args["text"]}}});
+                        return r; });
 
     auto resp = dispatch(make_call(json{{"text", "hello"}}));
     EXPECT_TRUE(resp.contains("result"));
@@ -110,7 +116,7 @@ TEST_F(ToolsCallTest, SuccessfulExecution)
 
 TEST_F(ToolsCallTest, BusinessFailureBecomesIsError)
 {
-    register_echo_tool([](const json &, IRequestContext &) -> json
+    register_echo_tool([](const json &, IRequestContext &) -> ToolResult
                        { throw std::runtime_error("resource unavailable"); });
 
     auto resp = dispatch(make_call(json{{"text", "x"}}));
@@ -126,7 +132,7 @@ TEST_F(ToolsCallTest, BusinessFailureBecomesIsError)
 
 TEST_F(ToolsCallTest, McpExceptionInExecutorBecomesIsError)
 {
-    register_echo_tool([](const json &, IRequestContext &) -> json
+    register_echo_tool([](const json &, IRequestContext &) -> ToolResult
                        { throw McpException(ErrorCode::InvalidParams,
                                             "semantic rejection"); });
 
@@ -143,7 +149,9 @@ TEST_F(ToolsCallTest, ProgressFlowsThroughToolExecution)
     register_echo_tool([](const json &, IRequestContext &ctx)
                        {
         ctx.report_progress(0.5, 1.0, "halfway");
-        return json::array({{{"type", "text"}, {"text", "done"}}}); });
+        ToolResult r;
+        r.content = json::array({{{"type", "text"}, {"text", "done"}}});
+        return r; });
 
     json params = {
         {"name", "echo"},

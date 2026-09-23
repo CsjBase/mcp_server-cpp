@@ -1,5 +1,5 @@
 #include "test_helpers.h"
-#include "mcp/InputValidator.h"
+#include "mcp/json_rpc/InputValidator.h"
 
 using namespace mcp;
 using json = nlohmann::json;

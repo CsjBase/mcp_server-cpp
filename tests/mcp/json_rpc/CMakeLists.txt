@@ -1,7 +1,7 @@
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/tests/mcp/json_rpc)
 
 add_executable(jsonrpc_types_test jsonrpc_types_test.cc  )
-target_link_libraries(jsonrpc_types_test PRIVATE  csj_mcp nlohmann_json::nlohmann_json)
+target_link_libraries(jsonrpc_types_test PRIVATE  csj_mcp)
 
 
 add_executable(mcp_tests

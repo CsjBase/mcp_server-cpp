@@ -6,10 +6,10 @@ namespace mcp
     StreamableHttpServer::StreamableHttpServer(net::EventLoop *loop,
                                                net::Address::ptr listenAddr,
                                                MethodDispatcher *dispatcher,
-                                               std::shared_ptr<utils::ThreadPool> thread_pool)
+                                               IExecutor &executor)
         : server_(loop, listenAddr, "McpHttpServer"),
           dispatcher_(dispatcher),
-          business_pool_(thread_pool)
+          executor_(executor)
     {
         server_.setConnectionCallback([this](auto &&PH1)
                                       { onConnection(std::forward<decltype(PH1)>(PH1)); });
@@ -74,11 +74,11 @@ namespace mcp
         }
 
         // 创建消息写入器（延迟决策状态机）
-        auto writer = std::make_shared<StreamableHttpMessageWriter>(conn, req);
+        auto writer = std::make_shared<StreamableHttpMessageWriter>(conn, req, keepalive_interval_);
 
         // 提交到业务线程池处理
-        business_pool_->submit([this, req, writer]()
-                               { 
+        executor_.execute([this, req, writer]()
+                          { 
             // 委托给 MethodDispatcher 处理
         try
         {

@@ -4,7 +4,7 @@
 #include "net/http/HttpContext.h"
 #include "mcp/json_rpc/MethodDispatcher.h"
 #include "StreamableHttpMessageWriter.h"
-#include "utils/thread_pool.h"
+#include "IExecutor.h"
 
 namespace mcp
 {
@@ -15,9 +15,13 @@ namespace mcp
         StreamableHttpServer(net::EventLoop *loop,
                              net::Address::ptr listenAddr,
                              MethodDispatcher *dispatcher,
-                             std::shared_ptr<utils::ThreadPool> thread_pool);
+                             IExecutor &executor);
 
         void start(int numThreads = 0);
+        void setKeepaliveInterval(double interval)
+        {
+            keepalive_interval_ = interval;
+        };
 
     private:
         void onConnection(const net::TcpConnection::ptr &conn);
@@ -37,7 +41,8 @@ namespace mcp
 
         net::TcpServer server_;
         MethodDispatcher *dispatcher_;
-        std::shared_ptr<utils::ThreadPool> business_pool_; // 共享持有
+        IExecutor &executor_; // 共享持有
+        double keepalive_interval_ = 30.0;
     };
 
 } // namespace mcp

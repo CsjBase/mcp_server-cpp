@@ -1,7 +1,7 @@
 #include "mcp/json_rpc/MethodDispatcher.h"
 #include "mcp/json_rpc/DefaultRequestContext.h"
 #include "mcp/transport/StdioTransport.h"
-#include "mcp/McpMethodHandlers.h"
+#include "mcp/server/McpMethodHandlers.h"
 
 int main()
 {
@@ -18,9 +18,11 @@ int main()
             {"properties", {{"text", {{"type", "string"}}}}},
             {"required", {"text"}}},
         [](const nlohmann::json &args,
-           mcp::IRequestContext &) -> nlohmann::json
+           mcp::IRequestContext &)
         {
-            return nlohmann::json{{"type", "text"}, {"text", args["text"]}};
+            mcp::ToolResult r;
+            r.content = nlohmann::json{{"type", "text"}, {"text", args["text"]}};
+            return r;
         }));
 
     // ---- 构建 stdio 传输 ----

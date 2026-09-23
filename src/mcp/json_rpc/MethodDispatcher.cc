@@ -84,22 +84,23 @@ namespace mcp
                 .to_json();
         }
 
-        if (req.params && req.params->is_object() &&
-            req.params->contains("_meta") &&
-            (*req.params)["_meta"].is_object() &&
-            (*req.params)["_meta"].contains(RequestMeta::KEY_LOG_LEVEL))
-        {
-            MCP_LOG_DEBUG(
-                "client requested deprecated logLevel, rejecting | request_id={}",
-                req.id.to_string());
-            return make_error(
-                       ErrorCode::InvalidParams,
-                       req.id,
-                       "logLevel is deprecated (SEP-2577); "
-                       "logs are written to stderr / OpenTelemetry, "
-                       "not sent over the protocol")
-                .to_json();
-        }
+        // // 2026-07-28 移除了logLevel参数
+        // if (req.params && req.params->is_object() &&
+        //     req.params->contains("_meta") &&
+        //     (*req.params)["_meta"].is_object() &&
+        //     (*req.params)["_meta"].contains(RequestMeta::KEY_LOG_LEVEL))
+        // {
+        //     MCP_LOG_DEBUG(
+        //         "client requested deprecated logLevel, rejecting | request_id={}",
+        //         req.id.to_string());
+        //     return make_error(
+        //                ErrorCode::InvalidParams,
+        //                req.id,
+        //                "logLevel is deprecated (SEP-2577); "
+        //                "logs are written to stderr / OpenTelemetry, "
+        //                "not sent over the protocol")
+        //         .to_json();
+        // }
 
         // ---- 构造请求上下文，注入上报能力 ----
         auto ctx = make_context(req, writer);
