@@ -32,6 +32,16 @@ namespace mcp
             return progress_token_.has_value();
         }
 
+        IMessageWriter &writer() override
+        {
+            return *writer_;
+        }
+
+        std::shared_ptr<IMessageWriter> shared_writer() override
+        {
+            return writer_;
+        }
+
     private:
         RequestMeta meta_;
         std::optional<ProgressToken> progress_token_;

@@ -453,6 +453,12 @@ namespace mcp
         std::optional<json> data_;
     };
 
+    // 空标记类型：表示 handler 已通过 writer 打开了一条长期流。
+    // 它不携带数据，仅作为 variant 的一个分支存在。
+    struct StreamOpenedTag
+    {
+    };
+
     // MCP 领域异常：业务代码抛出此异常，由框架根据调用位置决定错误语义。
     //
     // 在 tools/call 的 executor 内部抛出 → 被捕获并转为 result.isError = true

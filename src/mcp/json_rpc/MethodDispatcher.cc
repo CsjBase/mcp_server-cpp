@@ -18,8 +18,8 @@ namespace mcp
             .second;
     }
 
-    std::optional<json> MethodDispatcher::dispatch(const std::string &raw,
-                                                   std::shared_ptr<IMessageWriter> writer)
+    DispatchOutcome MethodDispatcher::dispatch(const std::string &raw,
+                                               std::shared_ptr<IMessageWriter> writer)
     {
         json j;
         try
@@ -29,22 +29,24 @@ namespace mcp
         catch (const json::parse_error &)
         {
             MCP_LOG_WARN("Failed to parse JSON: {}", raw);
-            return make_error(ErrorCode::ParseError).to_json();
+            return DispatchOutcome::make_response(
+                make_error(ErrorCode::ParseError).to_json());
         }
 
         // MCP 2026-07-28 移除了批量请求，明确拒绝
         if (j.is_array())
         {
             MCP_LOG_WARN("Batch request has been removed, illegal array input received");
-            return make_error(ErrorCode::InvalidRequest, std::nullopt,
-                              "Batch requests are not supported in MCP 2026-07-28")
-                .to_json();
+            return DispatchOutcome::make_response(
+                make_error(ErrorCode::InvalidRequest, std::nullopt,
+                           "Batch requests are not supported in MCP 2026-07-28")
+                    .to_json());
         }
 
         return dispatch_single(j, std::move(writer));
     }
 
-    std::optional<json> MethodDispatcher::dispatch_single(
+    DispatchOutcome MethodDispatcher::dispatch_single(
         const json &j, std::shared_ptr<IMessageWriter> writer)
     {
         if (j.contains("method"))
@@ -56,7 +58,8 @@ namespace mcp
                 if (!req)
                 {
                     MCP_LOG_WARN("Received invalid request");
-                    return make_error(ErrorCode::InvalidRequest).to_json();
+                    return DispatchOutcome::make_response(
+                        make_error(ErrorCode::InvalidRequest).to_json());
                 }
                 return handle_request(*req, std::move(writer));
             }
@@ -65,26 +68,33 @@ namespace mcp
                 auto notif = Notification::from_json(j);
                 if (notif)
                     handle_notification(*notif);
-                return std::nullopt;
+                return DispatchOutcome::make_notification();
             }
         }
-        return make_error(ErrorCode::InvalidRequest).to_json();
+        return DispatchOutcome::make_response(
+            make_error(ErrorCode::InvalidRequest).to_json());
     }
 
-    json MethodDispatcher::handle_request(const Request &req,
-                                          std::shared_ptr<IMessageWriter> writer)
+    DispatchOutcome MethodDispatcher::handle_request(const Request &req,
+                                                     std::shared_ptr<IMessageWriter> writer)
     {
-        std::shared_lock lock(mutex_);
-        auto it = handlers_.find(req.method);
-        if (it == handlers_.end())
+        RequestHandler handler;
         {
-            MCP_LOG_WARN("Request method not found. method:{}, requstid:{}", req.method, req.id.to_string());
-            return make_error(ErrorCode::MethodNotFound,
-                              req.id, req.method)
-                .to_json();
+            std::shared_lock lock(mutex_);
+            auto it = handlers_.find(req.method);
+            if (it == handlers_.end())
+            {
+                MCP_LOG_WARN("Request method not found. method:{}, requstid:{}",
+                             req.method, req.id.to_string());
+                return DispatchOutcome::make_response(
+                    make_error(ErrorCode::MethodNotFound,
+                               req.id, req.method)
+                        .to_json());
+            }
+            handler = it->second;
         }
 
-        // // 2026-07-28 移除了logLevel参数
+        // // 2026-07-28 `Logging` 特性已进入 12 个月弃用窗口
         // if (req.params && req.params->is_object() &&
         //     req.params->contains("_meta") &&
         //     (*req.params)["_meta"].is_object() &&
@@ -107,10 +117,21 @@ namespace mcp
 
         try
         {
-            auto result = it->second(req, *ctx);
+            auto result = handler(req, *ctx);
             return std::visit(
-                [](const auto &r)
-                { return r.to_json(); }, result);
+                [](auto &&r) -> DispatchOutcome
+                {
+                    using T = std::decay_t<decltype(r)>;
+                    if constexpr (std::is_same_v<T, StreamOpenedTag>)
+                    {
+                        return DispatchOutcome::make_stream_opened();
+                    }
+                    else
+                    {
+                        return DispatchOutcome::make_response(r.to_json());
+                    }
+                },
+                std::move(result));
         }
         catch (const McpException &e)
         {
@@ -121,14 +142,16 @@ namespace mcp
                 err.data = *e.data();
 
             MCP_LOG_WARN("Request method failed. err_code:{}, err_msg:{}, method:{}, requstid:{}", err.code, err.message, req.method, req.id.to_string());
-            return ErrorResponse{req.id, std::move(err)}.to_json();
+            return DispatchOutcome::make_response(
+                ErrorResponse{req.id, std::move(err)}.to_json());
         }
         catch (const std::exception &e)
         {
             MCP_LOG_ERROR("Request method failed. err_msg:{}, method:{}, requstid:{}", e.what(), req.method, req.id.to_string());
-            return make_error(ErrorCode::InternalError,
-                              req.id, e.what())
-                .to_json();
+            return DispatchOutcome::make_response(
+                make_error(ErrorCode::InternalError,
+                           req.id, e.what())
+                    .to_json());
         }
     }
 

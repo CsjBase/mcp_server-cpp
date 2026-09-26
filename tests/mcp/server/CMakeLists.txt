@@ -5,6 +5,7 @@ test_prompts.cpp
 test_resources.cpp
 test_tools.cpp
 test_uri_template.cpp
+test_subscriptions.cpp
 )
 target_link_libraries(server_tests
     PRIVATE csj_mcp GTest::gtest_main

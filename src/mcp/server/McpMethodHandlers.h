@@ -6,7 +6,7 @@
 #include "ResourceDescriptor.h"
 #include "PromptDescriptor.h"
 #include "UriTemplate.h"
-
+#include "SubscriptionRegistry.h"
 namespace mcp
 {
 
@@ -54,6 +54,10 @@ namespace mcp
         SuccessResponse handle_prompts_list(const Request &req);
         SuccessResponse handle_prompts_get(const Request &req);
 
+        HandlerResult handle_subscriptions_listen(
+            const Request &req,
+            IRequestContext &ctx);
+
     private:
         std::unordered_map<std::string, ToolDescriptor> tools_;
         std::unordered_map<std::string, ResourceDescriptor> resources_;
@@ -65,6 +69,8 @@ namespace mcp
 
         std::unordered_map<std::string, CompiledTemplate> resource_templates_;
         std::unordered_map<std::string, PromptDescriptor> prompts_;
+
+        std::shared_ptr<SubscriptionRegistry> subscriptions_;
 
         bool frozen_ = false;
 

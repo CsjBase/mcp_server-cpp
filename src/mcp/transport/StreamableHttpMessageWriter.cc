@@ -1,4 +1,5 @@
 #include "StreamableHttpMessageWriter.h"
+#include "mcp/base/Log.h"
 
 namespace mcp
 {
@@ -6,6 +7,19 @@ namespace mcp
     StreamableHttpMessageWriter::~StreamableHttpMessageWriter()
     {
         cancel_keepalive();
+
+        if (subscription_id_.has_value() && subscription_cleanup_)
+        {
+            try
+            {
+                subscription_cleanup_(subscription_id_.value());
+            }
+            catch (const std::exception &e)
+            {
+                MCP_LOG_ERROR("subscription cleanup failed: id={} what={}",
+                              *subscription_id_, e.what());
+            }
+        }
     }
     void StreamableHttpMessageWriter::write_notification(const json &notification)
     {

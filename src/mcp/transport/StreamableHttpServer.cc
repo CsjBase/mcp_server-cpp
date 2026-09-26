@@ -78,35 +78,42 @@ namespace mcp
 
         // 提交到业务线程池处理
         executor_.execute([this, req, writer]()
-                          { 
+                          {
             // 委托给 MethodDispatcher 处理
-        try
-        {
-            auto result = dispatcher_->dispatch(req->getBody(), writer);
-            if (result.has_value())
+            try
             {
-                writer->write_response(result.value());
+                auto result = dispatcher_->dispatch(req->getBody(), writer);
+
+                switch (result.kind)
+                {
+                case DispatchOutcome::Kind::Response:
+                    writer->write_response(result.payload.value());
+                    break;
+                case DispatchOutcome::Kind::Notification:
+                    writer->write_accepted();
+                    break;
+                case DispatchOutcome::Kind::StreamOpened:
+                    // SSE 流已通过 write_notification 打开，ack 已发出。
+                    // 不写入任何响应，保持连接打开。
+                    break;
+                }
             }
-            else
-            {
-                writer->write_accepted();
+            catch (const McpException& e) {
+                MCP_LOG_WARN("McpException in business pool: code={} msg={}",
+                            static_cast<int>(e.code()), e.what());
+                writer->write_response(ErrorResponse{
+                    std::nullopt,
+                    {static_cast<int>(e.code()), e.what(), e.data()}}
+                                        .to_json());
             }
-        }
-        catch (const McpException& e) {
-            MCP_LOG_WARN("McpException in business pool: code={} msg={}",
-                         static_cast<int>(e.code()), e.what());
-            writer->write_response(ErrorResponse{
-                std::nullopt,
-                {static_cast<int>(e.code()), e.what(), e.data()}
-            }.to_json());
-        }
-        catch (const std::exception& e) {
-            MCP_LOG_ERROR("unhandled exception in business pool: what={}", e.what());
-            writer->write_response(make_error(
-                ErrorCode::InternalError,
-                std::nullopt,
-                "internal error").to_json());
-        } });
+            catch (const std::exception& e) {
+                MCP_LOG_ERROR("unhandled exception in business pool: what={}", e.what());
+                writer->write_response(make_error(
+                                        ErrorCode::InternalError,
+                                        std::nullopt,
+                                        "internal error")
+                                        .to_json());
+            } });
     }
 
     // MCP 2026-07-28 必需的头部校验

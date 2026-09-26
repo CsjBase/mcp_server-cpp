@@ -1,8 +1,10 @@
 #include "McpMethodHandlers.h"
+#include "mcp/transport/StreamableHttpMessageWriter.h"
 
 namespace mcp
 {
     McpMethodHandlers::McpMethodHandlers(MethodDispatcher &dispatcher)
+        : subscriptions_(std::make_shared<SubscriptionRegistry>())
     {
         // Tools
         dispatcher.register_handler("tools/list",
@@ -35,6 +37,12 @@ namespace mcp
                                     [this](auto &req, auto &)
                                     {
                                         return handle_discover(req);
+                                    });
+
+        dispatcher.register_handler("subscriptions/listen",
+                                    [this](auto &req, auto &ctx)
+                                    {
+                                        return handle_subscriptions_listen(req, ctx);
                                     });
     }
 
@@ -412,5 +420,88 @@ namespace mcp
         result["ttlMs"] = 0; // prompt 内容通常不缓存
         result["cacheScope"] = "private";
         return SuccessResponse::make(req.id, std::move(result));
+    }
+
+    HandlerResult McpMethodHandlers::handle_subscriptions_listen(
+        const Request &req,
+        IRequestContext &ctx)
+    {
+        // ---- 协议层校验 ----
+        auto meta = req.extract_meta();
+        if (!meta || !meta->is_valid())
+        {
+            throw McpException(
+                ErrorCode::InvalidParams,
+                "Missing or invalid _meta in params");
+        }
+
+        // ---- 解析过滤器 ----
+        json notifications_raw = json::object();
+        if (req.params && req.params->is_object() &&
+            req.params->contains("notifications"))
+        {
+            notifications_raw = (*req.params)["notifications"];
+        }
+        SubscriptionFilter requested =
+            SubscriptionFilter::from_json(notifications_raw);
+
+        // ---- 确定服务端实际同意履行的子集 ----
+        SubscriptionFilter honored;
+
+        // 冻结架构下，注册表不会变化，因此不推送 list_changed 通知。
+        // 如果将来解冻，这里应改为 true（前提是注册了对应能力）。
+        // 当前如实返回 false（省略字段），让客户端知道不会收到变更通知。
+
+        // 资源订阅：只要请求了 URI 且资源存在，就同意
+        for (const auto &uri : requested.resource_subscriptions)
+        {
+            // if (resource_exists(uri))
+            if (resources_.find(uri) != resources_.end())
+            {
+                honored.resource_subscriptions.push_back(uri);
+            }
+        }
+
+        // ---- 构建 acknowledged 通知 ----
+        json ack_notifications = json::object();
+        if (honored.tools_list_changed)
+            ack_notifications["toolsListChanged"] = true;
+        if (honored.prompts_list_changed)
+            ack_notifications["promptsListChanged"] = true;
+        if (honored.resources_list_changed)
+            ack_notifications["resourcesListChanged"] = true;
+        if (!honored.resource_subscriptions.empty())
+            ack_notifications["resourceSubscriptions"] =
+                honored.resource_subscriptions;
+
+        std::string subscription_id = req.id.to_string();
+
+        json ack;
+        ack["jsonrpc"] = "2.0";
+        ack["method"] = METHOD_SUBSCRIPTIONS_ACKNOWLEDGED;
+        ack["params"] = {
+            {"_meta", {{KEY_SUBSCRIPTION_ID, subscription_id}}},
+            {"notifications", std::move(ack_notifications)}};
+
+        // 通过 writer 直接发送 acknowledged（这是流上的第一条消息）
+        ctx.writer().write_notification(ack);
+
+        subscriptions_->add(subscription_id,
+                            std::move(honored),
+                            ctx.shared_writer());
+
+        auto *http_writer = dynamic_cast<StreamableHttpMessageWriter *>(&ctx.writer());
+        if (http_writer)
+        {
+            std::weak_ptr<SubscriptionRegistry> weak_registry = subscriptions_;
+            http_writer->set_subscription_cleanup(subscription_id,
+                                                  [weak_registry](const std::string &id)
+                                                  {
+                                                      if (auto reg = weak_registry.lock())
+                                                          reg->remove(id);
+                                                  });
+        }
+
+        return StreamOpenedTag{};
     }
 }

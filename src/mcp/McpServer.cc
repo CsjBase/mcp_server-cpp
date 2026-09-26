@@ -162,9 +162,14 @@ namespace mcp
                 // 若配置了线程池，仍可在 handler 内部使用，但当前
                 // 直接同步调用 dispatch。
                 auto result = impl_->dispatcher.dispatch(raw, writer);
-                if (result.has_value())
+
+                switch (result.kind)
                 {
-                    return result->dump();
+                case DispatchOutcome::Kind::Response:
+                    return result.payload.value().dump();
+                case DispatchOutcome::Kind::Notification:
+                case DispatchOutcome::Kind::StreamOpened:
+                    return std::nullopt;
                 }
                 return std::nullopt; // 通知：无响应
             });

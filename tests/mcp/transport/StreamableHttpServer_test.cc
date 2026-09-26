@@ -2,6 +2,7 @@
 #include "mcp/transport/StreamableHttpServer.h"
 #include "mcp/json_rpc/MethodDispatcher.h"
 #include "mcp/server/McpMethodHandlers.h"
+#include "mcp/transport/IExecutor.h"
 
 int main()
 {
@@ -29,8 +30,8 @@ int main()
         }));
 
     // 启动 HTTP 服务器
-    auto business_pool = std::make_shared<utils::ThreadPool>(4, 4096);
-    mcp::StreamableHttpServer server(&loop, listenAddr, &dispatcher, business_pool);
+    auto executor = std::make_unique<mcp::ThreadPoolExecutor>(4, 4096);
+    mcp::StreamableHttpServer server(&loop, listenAddr, &dispatcher, *executor);
     server.start(4);
 
     loop.loop();

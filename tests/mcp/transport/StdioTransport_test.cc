@@ -39,9 +39,16 @@ int main()
             // MethodDispatcher 返回 optional<json>：
             //   有值 → 请求，序列化为字符串返回
             //   无值 → 通知，返回 nullopt
-            if (result)
+            switch (result.kind)
             {
-                return result->dump();
+            case mcp::DispatchOutcome::Kind::Response:
+                return result.payload->dump();
+
+            case mcp::DispatchOutcome::Kind::Notification:
+            case mcp::DispatchOutcome::Kind::StreamOpened:
+                // stdio 无 SSE，StreamOpened 时 ack 已通过
+                // write_notification 写入 stdout，无需额外响应
+                return std::nullopt;
             }
             return std::nullopt;
         });

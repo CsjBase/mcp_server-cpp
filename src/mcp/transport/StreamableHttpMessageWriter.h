@@ -40,6 +40,14 @@ namespace mcp
 
         bool is_streaming() const override { return state_ == State::Streaming; }
 
+        void set_subscription_cleanup(
+            std::string subscription_id,
+            std::function<void(const std::string &)> cleanup)
+        {
+            subscription_id_ = subscription_id;
+            subscription_cleanup_ = cleanup;
+        }
+
     private:
         void upgrade_to_sse();
         void start_keepalive();
@@ -52,6 +60,9 @@ namespace mcp
 
         double keepalive_interval_;
         net::TimerId keepalive_timer_id_;
+
+        std::optional<std::string> subscription_id_;
+        std::function<void(const std::string &)> subscription_cleanup_;
     };
 
 } // namespace

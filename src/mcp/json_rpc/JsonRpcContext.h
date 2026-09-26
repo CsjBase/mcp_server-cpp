@@ -38,6 +38,11 @@ namespace mcp
 
         // 客户端是否请求了进度上报
         virtual bool has_progress_token() const = 0;
+
+        // 获取底层 writer，用于订阅流等需要直接发送通知的场景。
+        // 普通工具不应调用此方法。
+        virtual IMessageWriter &writer() = 0;
+        virtual std::shared_ptr<IMessageWriter> shared_writer() = 0;
     };
 
 }

@@ -57,8 +57,9 @@ protected:
     json dispatch(const json &req)
     {
         auto r = dispatcher.dispatch(req.dump(), writer);
-        EXPECT_TRUE(r.has_value());
-        return *r;
+        EXPECT_EQ(r.kind, DispatchOutcome::Kind::Response);
+        EXPECT_TRUE(r.payload.has_value());
+        return *r.payload;
     }
 };
 
