@@ -181,6 +181,74 @@ TEST(MpmcBlockingQueueTest, DequeueForWokenByProducer)
     producer.join();
 }
 
+// ---- enqueue_for with space immediately available ----
+TEST(MpmcBlockingQueueTest, EnqueueForImmediate)
+{
+    mpmc_blocking_queue<int> q(2);
+
+    EXPECT_TRUE(q.enqueue_for(42, std::chrono::milliseconds(10)));
+    auto v = q.dequeue();
+    ASSERT_TRUE(v.has_value());
+    EXPECT_EQ(*v, 42);
+}
+
+// ---- enqueue_for rvalue overload ----
+TEST(MpmcBlockingQueueTest, EnqueueForRvalue)
+{
+    mpmc_blocking_queue<std::string> q(2);
+
+    EXPECT_TRUE(q.enqueue_for(std::string("hello"), std::chrono::milliseconds(10)));
+    auto v = q.dequeue();
+    ASSERT_TRUE(v.has_value());
+    EXPECT_EQ(*v, "hello");
+}
+
+// ---- enqueue_for timeout on full queue ----
+TEST(MpmcBlockingQueueTest, EnqueueForTimeout)
+{
+    mpmc_blocking_queue<int> q(2);
+
+    q.enqueue(1);
+    q.enqueue(2);
+
+    auto start = std::chrono::steady_clock::now();
+    EXPECT_FALSE(q.enqueue_for(3, std::chrono::milliseconds(50)));
+    auto elapsed = std::chrono::steady_clock::now() - start;
+
+    EXPECT_GE(elapsed, std::chrono::milliseconds(50));
+
+    // 超时未入队，队列内容不变
+    EXPECT_EQ(*q.dequeue(), 1);
+    EXPECT_EQ(*q.dequeue(), 2);
+}
+
+// ---- enqueue_for wakes up when consumer frees space ----
+TEST(MpmcBlockingQueueTest, EnqueueForWokenByConsumer)
+{
+    mpmc_blocking_queue<int> q(1);
+
+    q.enqueue(1); // 队列已满
+
+    std::thread consumer([&q]
+                         {
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        EXPECT_EQ(*q.dequeue(), 1); });
+
+    EXPECT_TRUE(q.enqueue_for(2, std::chrono::milliseconds(500)));
+    EXPECT_EQ(*q.dequeue(), 2);
+
+    consumer.join();
+}
+
+// ---- enqueue_for fails immediately after stop ----
+TEST(MpmcBlockingQueueTest, EnqueueForFailsAfterStop)
+{
+    mpmc_blocking_queue<int> q(2);
+
+    q.stop_gracefully();
+    EXPECT_FALSE(q.enqueue_for(1, std::chrono::milliseconds(50)));
+}
+
 // ---- blocking enqueue waits until space available ----
 TEST(MpmcBlockingQueueTest, EnqueueBlocksUntilSpace)
 {

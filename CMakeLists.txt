@@ -11,6 +11,8 @@ find_package(fmt REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(unofficial-libmysql CONFIG REQUIRED)
+find_package(hiredis CONFIG REQUIRED)
 
 add_subdirectory(src)
 

@@ -15,6 +15,11 @@ target_link_libraries(aes_crypt_test PRIVATE csj_utils GTest::gtest GTest::gtest
 add_executable(thread_pool_test thread_pool_test.cc)
 target_link_libraries(thread_pool_test PRIVATE csj_utils GTest::gtest GTest::gtest_main)
 
+add_executable(queue_bench queue_bench.cc)
+target_link_libraries(queue_bench PRIVATE csj_utils)
+# 基准程序必须带优化编译, 否则数字失真(其余测试保持 Debug)
+target_compile_options(queue_bench PRIVATE -O2)
+
 include(GoogleTest)
 gtest_discover_tests(circular_q_test)
 gtest_discover_tests(mpmc_blocking_queue_test)

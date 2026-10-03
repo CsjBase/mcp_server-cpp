@@ -30,6 +30,15 @@ namespace utils
         bool enqueue(const T &item);
         bool enqueue(T &&item);
 
+        /**
+         * 带超时的阻塞入队：在 timeout 内等待空闲位置；
+         * 入队成功返回 true，超时或队列停止返回 false
+         */
+        template <typename Rep, typename Period>
+        bool enqueue_for(const T &item, const std::chrono::duration<Rep, Period> &timeout);
+        template <typename Rep, typename Period>
+        bool enqueue_for(T &&item, const std::chrono::duration<Rep, Period> &timeout);
+
         /** 非阻塞入队：若队列已满则覆盖最旧消息入队，入队成功返回 true，中断返回 false*/
         bool enqueue_overwrite(const T &item);
         bool enqueue_overwrite(T &&item);
@@ -124,6 +133,47 @@ namespace utils
             std::unique_lock<std::mutex> lock(mutex_);
             not_full_cv_.wait(lock, [this]
                               { return !queue_.full() || is_stopped_(); });
+            if (is_stopped_())
+                return false;
+            queue_.push_back(std::move(item));
+        }
+        not_empty_cv_.notify_one();
+        return true;
+    }
+
+    template <typename T>
+    template <typename Rep, typename Period>
+    bool mpmc_blocking_queue<T>::enqueue_for(const T &item,
+                                             const std::chrono::duration<Rep, Period> &timeout)
+    {
+        if (is_stopped_())
+            return false;
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            // wait_for 返回 false 表示超时且队列仍满
+            if (!not_full_cv_.wait_for(lock, timeout, [this]
+                                       { return !queue_.full() || is_stopped_(); }))
+                return false;
+            if (is_stopped_())
+                return false;
+            queue_.push_back(T(item));
+        }
+        not_empty_cv_.notify_one();
+        return true;
+    }
+
+    template <typename T>
+    template <typename Rep, typename Period>
+    bool mpmc_blocking_queue<T>::enqueue_for(T &&item,
+                                             const std::chrono::duration<Rep, Period> &timeout)
+    {
+        if (is_stopped_())
+            return false;
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            if (!not_full_cv_.wait_for(lock, timeout, [this]
+                                       { return !queue_.full() || is_stopped_(); }))
+                return false;
             if (is_stopped_())
                 return false;
             queue_.push_back(std::move(item));

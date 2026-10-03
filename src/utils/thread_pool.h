@@ -46,6 +46,10 @@ namespace utils
         template <typename F, typename... Args>
         bool try_submit(F &&f, Args &&...args);
 
+        /// 带超时的阻塞提交，阻塞等待超时返回 false
+        template <typename F, typename... Args>
+        bool submit_for(std::chrono::milliseconds timeout, F &&f, Args &&...args);
+
         size_t pending_count() const;
         size_t completed_count() const noexcept;
         void reset_stats();
@@ -88,6 +92,12 @@ namespace utils
     bool ThreadPool::try_submit(F &&f, Args &&...args)
     {
         return queue_.try_enqueue(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+    }
+
+    template <typename F, typename... Args>
+    bool ThreadPool::submit_for(std::chrono::milliseconds timeout, F &&f, Args &&...args)
+    {
+        return queue_.enqueue_for(std::bind(std::forward<F>(f), std::forward<Args>(args)...), timeout);
     }
 
 } // namespace utils
