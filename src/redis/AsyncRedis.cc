@@ -89,12 +89,17 @@ namespace redis
                          });
     }
 
-    void AsyncRedis::disconnect()
+    void AsyncRedis::close()
     {
         m_loop->assertInLoopThread();
         if (m_state == State::kDisconnected)
             return;
         teardown();
+    }
+
+    void AsyncRedis::setErrorCallback(ErrorCallback cb)
+    {
+        m_errorCallback = std::move(cb);
     }
 
     // ---- 命令 ----
@@ -156,9 +161,11 @@ namespace redis
 
     // ---- hiredis C 回调(均在 hiredis 的 HandleRead/HandleWrite 调用栈内, 即 loop 线程) ----
 
-    void AsyncRedis::replyCallback(redisAsyncContext *, void *reply, void *privdata)
+    void AsyncRedis::replyCallback(redisAsyncContext *ac, void *reply, void *privdata)
     {
         std::unique_ptr<ReplyCallback> cb((ReplyCallback *)privdata);
+        auto *self = (AsyncRedis *)ac->ev.data;
+        self->setLastActiveTime(nowMs()); // 与同步端一致: 收到回复即刷新活跃时间
         // 已设置 REDIS_NO_AUTO_FREE_REPLIES: reply 所有权交给 ReplyPtr
         (*cb)(reply ? ReplyPtr((redisReply *)reply, freeReplyObject) : nullptr);
     }

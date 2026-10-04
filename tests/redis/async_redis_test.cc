@@ -186,7 +186,7 @@ TEST_F(AsyncRedisTest, PeerCloseNotifiesErrorAndFailsPending)
     EXPECT_TRUE(nullP.get_future().get());
     auto err = errP.get_future().get();
     EXPECT_FALSE(err.empty());
-    EXPECT_FALSE(m_client->connected());
+    EXPECT_FALSE(m_client->isConnected());
 }
 
 TEST_F(AsyncRedisTest, CmdWithoutConnectGetsNullReply)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Redis.h" // ReplyPtr
+#include "Redis.h" // IRedis + ReplyPtr
 #include "net/EventLoop.h"
 #include "net/Channel.h"
 
@@ -15,7 +15,33 @@ namespace redis
 {
 
     /**
-     * @brief 基于 hiredis 异步 API + csj_net EventLoop/Channel 的 Redis 异步客户端
+     * @brief 异步命令接口(回调式, 所有操作与回调均在 EventLoop 线程)
+     */
+    class IAsyncRedis : public IRedis
+    {
+    public:
+        typedef std::shared_ptr<IAsyncRedis> ptr;
+        typedef std::function<void(ReplyPtr)> ReplyCallback;              // 出错时收到空 reply
+        typedef std::function<void(const std::string &err)> ErrorCallback; // 连接断开
+        typedef std::function<void(bool ok)> ConnectCallback;
+
+        virtual ~IAsyncRedis() {}
+
+        /**
+         * 发起非阻塞连接; 结果通过 connCallback 在 loop 线程回调。
+         * 若已存在连接会先断开。超时未完成则回调 ok=false。
+         */
+        virtual void connect(const std::string &ip, int port,
+                             ConnectCallback cb = nullptr, int timeoutMs = 3000) = 0;
+        /// 发送命令(须在 loop 线程调用); 回复按发送顺序回调
+        virtual void cmd(const std::vector<std::string> &argv, ReplyCallback cb) = 0;
+        /// 便捷格式版: cmd("SET %s %s", cb, key, value)
+        virtual void cmd(const char *fmt, ReplyCallback cb, ...) = 0;
+        virtual void setErrorCallback(ErrorCallback cb) = 0;
+    };
+
+    /**
+     * @brief 异步客户端: hiredis 异步 API + csj_net EventLoop/Channel
      *
      * 实现方式(hiredis 官方适配器路线): 使用 redisAsyncContext, 将其
      * ev 结构体中的事件函数指针(addRead/delRead/addWrite/delWrite/cleanup)
@@ -30,45 +56,31 @@ namespace redis
      * - 断连: hiredis 检测到连接死亡后自动释放上下文(ev.cleanup 幂等),
      *   未决命令的回调收到空 ReplyPtr, 随后触发 onDisconnect → errorCallback
      * - reply 所有权: 设置 REDIS_NO_AUTO_FREE_REPLIES 后, reply 交由
-     *   ReplyPtr 管理, 与同步客户端语义一致
+     *   ReplyPtr 管理, 与同步客户端语义一致; 每条回复刷新 lastActiveTime
      * - 线程模型: 所有操作与回调均在 EventLoop 线程(assertInLoopThread),
      *   跨线程请用 loop->runInLoop/queueInLoop
      *
      * 生命周期: 与 EventLoop 同生命周期, 须在 loop 线程析构。
      */
-    class AsyncRedis : public std::enable_shared_from_this<AsyncRedis>
+    class AsyncRedis : public IAsyncRedis
     {
     public:
         typedef std::shared_ptr<AsyncRedis> ptr;
-        typedef std::function<void(ReplyPtr)> ReplyCallback;              // 出错时收到空 reply
-        typedef std::function<void(const std::string &err)> ErrorCallback; // 连接断开
-        typedef std::function<void(bool ok)> ConnectCallback;
 
         explicit AsyncRedis(net::EventLoop *loop);
-        ~AsyncRedis();
+        ~AsyncRedis() override;
 
         AsyncRedis(const AsyncRedis &) = delete;
         AsyncRedis &operator=(const AsyncRedis &) = delete;
 
-        /**
-         * 发起非阻塞连接; 结果通过 connCallback 在 loop 线程回调。
-         * 若已存在连接会先断开。超时未完成则回调 ok=false。
-         */
         void connect(const std::string &ip, int port,
-                     ConnectCallback cb = nullptr, int timeoutMs = 3000);
+                     ConnectCallback cb = nullptr, int timeoutMs = 3000) override;
+        void cmd(const std::vector<std::string> &argv, ReplyCallback cb) override;
+        void cmd(const char *fmt, ReplyCallback cb, ...) override;
+        void setErrorCallback(ErrorCallback cb) override;
 
-        /// 断开连接(未决命令回调收到空 reply)
-        void disconnect();
-
-        bool connected() const { return m_state == State::kConnected; }
-
-        /// 发送命令(须在 loop 线程调用); 回复按发送顺序回调
-        void cmd(const std::vector<std::string> &argv, ReplyCallback cb);
-        /// 便捷格式版: cmd("SET %s %s", cb, key, value)
-        void cmd(const char *fmt, ReplyCallback cb, ...);
-
-        void setErrorCallback(ErrorCallback cb) { m_errorCallback = std::move(cb); }
-        void setPasswd(const std::string &v) { m_passwd = v; }
+        bool isConnected() const override { return m_state == State::kConnected; }
+        void close() override;
 
     private:
         enum class State
@@ -97,11 +109,11 @@ namespace redis
         static void evCleanup(void *privdata);
 
         // ---- 内部状态机 ----
-        void onConnected(bool ok);                    // onConnect 回调(含 AUTH)
+        void onConnected(bool ok);                       // onConnect 回调(含 AUTH)
         void onDisconnected(int status, const char *errstr); // onDisconnect 回调
-        void onConnectResult(bool ok);                // 触发 C++ ConnectCallback
-        void afterAsyncCall();                        // 补释放连接失败的上下文
-        void teardown();                              // 主动释放(幂等)
+        void onConnectResult(bool ok);                   // 触发 C++ ConnectCallback
+        void afterAsyncCall();                           // 补释放连接失败的上下文
+        void teardown();                                 // 主动释放(幂等)
 
         net::EventLoop *m_loop;
         net::Channel::ptr m_channel;
@@ -112,11 +124,7 @@ namespace redis
         ConnectCallback m_connectCallback;
         ErrorCallback m_errorCallback;
 
-        std::string m_ip;
-        int m_port = 6379;
         int m_connectTimeoutMs = 3000;
-        std::string m_passwd;
-
         uint64_t m_generation = 0; // 连接代数, 用于使旧的超时定时器失效
     };
 

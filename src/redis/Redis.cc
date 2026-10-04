@@ -8,14 +8,6 @@
 namespace redis
 {
 
-    // 当前 Unix 毫秒时间戳, 用于 m_lastActiveTime
-    static uint64_t nowMs()
-    {
-        struct timeval tv;
-        gettimeofday(&tv, nullptr);
-        return (uint64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
-    }
-
     static bool getConf(const std::map<std::string, std::string> &conf,
                         const std::string &key, std::string &out)
     {
@@ -27,10 +19,9 @@ namespace redis
     }
 
     Redis::Redis()
-        : m_ip("127.0.0.1"), m_port(6379), m_connectMs(3000)
+        : m_connectMs(3000)
     {
         m_cmdTimeout = {0, 0}; // 默认无命令超时
-        m_lastActiveTime = 0;  // 基类成员, 不能在初始化列表中初始化
     }
 
     Redis::Redis(const std::map<std::string, std::string> &conf)
@@ -56,8 +47,18 @@ namespace redis
 
     bool Redis::reconnect()
     {
-        m_context.reset(); // redisFree 释放旧连接
+        close();
         return connect();
+    }
+
+    bool Redis::isConnected() const
+    {
+        return m_context && !m_context->err;
+    }
+
+    void Redis::close()
+    {
+        m_context.reset(); // redisFree 释放连接
     }
 
     bool Redis::connect(const std::string &ip, int port, uint64_t ms)
