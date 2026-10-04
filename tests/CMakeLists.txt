@@ -25,6 +25,7 @@ add_subdirectory(net)
 add_subdirectory(config)
 add_subdirectory(mcp)
 add_subdirectory(db)
+add_subdirectory(redis)
 
 add_executable(ctest test.cc)
 target_link_libraries(ctest PUBLIC nlohmann_json::nlohmann_json)
