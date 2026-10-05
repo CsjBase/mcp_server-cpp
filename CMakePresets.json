@@ -21,6 +21,22 @@
       "environment": {
         "VCPKG_ROOT": "$penv{VCPKG_ROOT}"
       }
+    },
+    {
+      "name": "release",
+      "displayName": "Release (vcpkg + Release)",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build-release",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": {
+          "type": "FILEPATH",
+          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        },
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "environment": {
+        "VCPKG_ROOT": "$penv{VCPKG_ROOT}"
+      }
     }
   ]
 }

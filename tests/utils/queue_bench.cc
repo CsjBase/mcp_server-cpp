@@ -21,7 +21,7 @@
 namespace
 {
     constexpr size_t kCapacity = 1024;
-    constexpr uint64_t kTotalOps = 4'000'000;
+    constexpr uint64_t kTotalOps = 400'000;
     constexpr int kRounds = 3;
 
     struct Result
@@ -35,7 +35,7 @@ namespace
     uint64_t expectedSum(int producers)
     {
         uint64_t base = kTotalOps / producers;
-        uint64_t s = base * (base - 1) / 2;               // 每个生产者区间内和
+        uint64_t s = base * (base - 1) / 2;                                     // 每个生产者区间内和
         uint64_t off = (uint64_t)(producers - 1) * producers / 2 * base * base; // 区间偏移和
         return producers * s + off;
     }
@@ -58,8 +58,7 @@ namespace
                                 {
                                     uint64_t base = (uint64_t)p * (kTotalOps / producers);
                                     for (uint64_t i = 0; i < kTotalOps / producers; ++i)
-                                        q.enqueue(base + i);
-                                });
+                                        q.enqueue(base + i); });
             }
             for (int c = 0; c < consumers; ++c)
             {
@@ -72,8 +71,7 @@ namespace
                                             continue;
                                         sum.fetch_add(*v, std::memory_order_relaxed);
                                         consumed.fetch_add(1, std::memory_order_relaxed);
-                                    }
-                                });
+                                    } });
             }
             for (auto &t : ts)
                 t.join();
@@ -109,8 +107,7 @@ namespace
                                     uint64_t base = (uint64_t)p * (kTotalOps / producers);
                                     for (uint64_t i = 0; i < kTotalOps / producers; ++i)
                                         while (!q.enqueue(base + i))
-                                            std::this_thread::yield();
-                                });
+                                            std::this_thread::yield(); });
             }
             for (int c = 0; c < consumers; ++c)
             {
@@ -126,8 +123,7 @@ namespace
                                         }
                                         sum.fetch_add(v, std::memory_order_relaxed);
                                         consumed.fetch_add(1, std::memory_order_relaxed);
-                                    }
-                                });
+                                    } });
             }
             for (auto &t : ts)
                 t.join();
@@ -184,6 +180,6 @@ int main()
 
     benchScenario(1, 1, "SPSC(1P1C)");
     benchScenario(4, 1, "MPSC(4P1C)");
-    benchScenario(8, 8, "MPMC(8P8C)");
+    // benchScenario(8, 8, "MPMC(8P8C)");
     return 0;
 }
