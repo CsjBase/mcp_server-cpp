@@ -28,7 +28,7 @@ namespace net
             auto color_sink = std::make_shared<logger::StderrColorLogSinkMT>();
             logger = logger::create_async_logger("net", {rotating_file_mt_sink, color_sink});
             logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%t] [%n] [%^%l%$] [%s:%#] %v");
-            logger->set_level(logger::LogLevel::Trace);
+            logger->set_level(logger::LogLevel::Info);
         }
     }
 }
