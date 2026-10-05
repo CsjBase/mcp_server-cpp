@@ -1,6 +1,7 @@
 #include "DBPool.h"
 #include "Log.h"
 #include "config/Config.h"
+#include "utils/cached_clock.h"
 #include <stdarg.h>
 #include <algorithm>
 #include <stdexcept>
@@ -14,8 +15,8 @@ namespace db
 
     DBConnection::DBConnection(IDB::ptr conn)
         : conn_(conn),
-          createdAt_(std::chrono::steady_clock::now()),
-          lastUsedAt_(std::chrono::steady_clock::now())
+          createdAt_(utils::cached_steady_now()),
+          lastUsedAt_(utils::cached_steady_now())
     {
     }
 
@@ -74,27 +75,29 @@ namespace db
     bool DBConnection::ping() { return conn_->ping(); }
     uint64_t DBConnection::getInsertId() { return conn_->getInsertId(); }
 
+    // 超时判定统一用缓存单调钟(~1ms 粒度): 阈值均为秒级, 误差 <0.1%,
+    // 且规避 clock_gettime 在虚拟化环境下的高开销(VM 拦截实测 ~20us/次)
     bool DBConnection::isIdleTimeout(int seconds)
     {
-        auto now = std::chrono::steady_clock::now();
+        auto now = utils::cached_steady_now();
         return std::chrono::duration_cast<std::chrono::seconds>(now - lastUsedAt_).count() >= seconds;
     }
 
     bool DBConnection::isLifeTimeout(int seconds)
     {
-        auto now = std::chrono::steady_clock::now();
+        auto now = utils::cached_steady_now();
         return std::chrono::duration_cast<std::chrono::seconds>(now - createdAt_).count() >= seconds;
     }
 
     bool DBConnection::isKeepaliveTimeout(int seconds)
     {
-        auto now = std::chrono::steady_clock::now();
+        auto now = utils::cached_steady_now();
         return std::chrono::duration_cast<std::chrono::seconds>(now - lastUsedAt_).count() >= seconds;
     }
 
     bool DBConnection::isBorrowedTimeout(int seconds)
     {
-        auto now = std::chrono::steady_clock::now();
+        auto now = utils::cached_steady_now();
         return std::chrono::duration_cast<std::chrono::seconds>(
                    now - borrowedAt_.load(std::memory_order_acquire))
                    .count() >= seconds;
@@ -102,7 +105,7 @@ namespace db
 
     void DBConnection::refreshLastUsedTime()
     {
-        lastUsedAt_ = std::chrono::steady_clock::now();
+        lastUsedAt_ = utils::cached_steady_now();
     }
 
     // ---------------- DBPool ----------------
@@ -229,7 +232,7 @@ namespace db
         {
             idleCount_.fetch_sub(1, std::memory_order_relaxed);
             conn->setState(ConnState::InUse);
-            conn->setBorrowedTime(std::chrono::steady_clock::now());
+            conn->setBorrowedTime(utils::cached_steady_now());
         }
         return conn;
     }

@@ -20,9 +20,13 @@ target_link_libraries(queue_bench PRIVATE csj_utils)
 # 基准程序必须带优化编译, 否则数字失真(其余测试保持 Debug)
 target_compile_options(queue_bench PRIVATE -O2)
 
+add_executable(cached_clock_test cached_clock_test.cc)
+target_link_libraries(cached_clock_test PRIVATE csj_utils GTest::gtest GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(circular_q_test)
 gtest_discover_tests(mpmc_blocking_queue_test)
 gtest_discover_tests(zlib_compress_test)
 gtest_discover_tests(aes_crypt_test)
 gtest_discover_tests(thread_pool_test)
+gtest_discover_tests(cached_clock_test)

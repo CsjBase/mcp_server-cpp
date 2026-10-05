@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include "logger/sinks/LogSink.h"
+#include "utils/cached_clock.h"
 
 #define LOGGER_TRY try
 #define LOGGER_CATCH(event)                                                     \
@@ -94,7 +95,9 @@ namespace logger
                 return;
 
             std::string msg = fmt::format(fmt, std::forward<Args>(args)...);
-            details::LogEvent event(std::chrono::system_clock::now(), loc, name_, lvl, msg);
+            // 时间戳走缓存钟(~1ms 粒度): 规避 clock_gettime 在虚拟化环境
+            // 下的高开销(VM 拦截实测 ~20us/次), 热路径零系统调用
+            details::LogEvent event(utils::cached_wall_now(), loc, name_, lvl, msg);
 
             sink_it_(event);
             // for (auto &sink : sinks_)
