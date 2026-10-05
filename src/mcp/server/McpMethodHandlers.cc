@@ -102,7 +102,15 @@ namespace mcp
         // resources 能力：静态资源或模板任一存在即声明支持
         if (!resources_.empty() || !resource_templates_.empty())
         {
-            capabilities["resources"] = json::object();
+            json resources_cap = json::object();
+
+            // 如果注册了至少一个资源（静态或模板），
+            // 就认为服务端可以处理 resourceSubscriptions 过滤器
+            if (!resources_.empty() || !resource_templates_.empty())
+            {
+                resources_cap["subscribe"] = true;
+            }
+            capabilities["resources"] = std::move(resources_cap);
         }
 
         // prompts 能力
@@ -456,9 +464,21 @@ namespace mcp
         for (const auto &uri : requested.resource_subscriptions)
         {
             // if (resource_exists(uri))
+            // 先查静态资源
             if (resources_.find(uri) != resources_.end())
             {
                 honored.resource_subscriptions.push_back(uri);
+            }
+            else
+            {
+                // 模板资源：编译后的模板直接 match
+                for (const auto &[key, ct] : resource_templates_)
+                {
+                    if (ct.compiled.match(uri).has_value())
+                    {
+                        honored.resource_subscriptions.push_back(uri);
+                    }
+                }
             }
         }
 

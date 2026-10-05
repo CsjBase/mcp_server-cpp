@@ -2,7 +2,8 @@
 
 #include "net/base/Thread.h"
 
-#include <condition_variable>
+// #include <condition_variable>
+#include <future>
 
 namespace net
 {
@@ -21,9 +22,10 @@ namespace net
         void threadFunc();
 
     private:
-        std::mutex m_mutex;
-        std::condition_variable m_cond;
+        // std::mutex m_mutex;
+        // std::condition_variable m_cond;
         EventLoop *m_loop;
+        std::promise<EventLoop *> m_promise;
         bool m_exiting;
         Thread m_thread;
         ThreadInitCallback m_callback;

@@ -186,13 +186,14 @@ TEST_F(SubscriptionsTest, ResourceSubscriptionHonoredForExistingStatic)
 
 TEST_F(SubscriptionsTest, ResourceSubscriptionHonoredForTemplate)
 {
-    handlers->register_resource(
-        ResourceDescriptor{
-            .uri = "file:///logs/2024-01-01.log",
+    handlers->register_resource_template(
+        ResourceTemplateDescriptor{
+            .uri_template = "file:///logs/{date}.log",
             .name = "Log",
             .description = std::nullopt,
             .mime_type = "text/plain",
-            .reader = []()
+            .reader = [](const std::string &uri,
+                         const std::unordered_map<std::string, std::string> &params)
             {
                 return json::array();
             }});

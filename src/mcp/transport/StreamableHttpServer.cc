@@ -183,10 +183,19 @@ namespace mcp
 
         // 校验 Mcp-Name 头部
         std::string mcp_name = req->getHeader("Mcp-Name");
-        std::string params_name;
-        if (body.contains("params") && body["params"].contains("name") && body["params"]["name"].is_string())
+        std::string expected_name_field;
+        if (mcp_method == "tools/call" || mcp_method == "prompts/get")
         {
-            params_name = body["params"]["name"].get<std::string>();
+            expected_name_field = "name";
+        }
+        else if (mcp_method == "resources/read")
+        {
+            expected_name_field = "uri";
+        }
+        std::string params_name;
+        if (body.contains("params") && body["params"].contains(expected_name_field) && body["params"][expected_name_field].is_string())
+        {
+            params_name = body["params"][expected_name_field].get<std::string>();
         }
         if (mcp_name != params_name)
         {
