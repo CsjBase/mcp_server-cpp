@@ -53,6 +53,15 @@ target_link_libraries(log_tool_test PRIVATE csj_log csj_utils GTest::gtest GTest
 add_executable(logconfig_test logconfig_test.cc)
 target_link_libraries(logconfig_test PRIVATE csj_log csj_utils)
 
+add_executable(logger_bench logger_bench.cc)
+target_link_libraries(logger_bench PRIVATE csj_log)
+# 基准程序必须带优化编译, 否则数字失真(其余测试保持 Debug)
+target_compile_options(logger_bench PRIVATE -O2)
+
+add_executable(async_logger_batch_test async_logger_batch_test.cc)
+target_link_libraries(async_logger_batch_test PRIVATE csj_log GTest::gtest GTest::gtest_main)
+
 include(GoogleTest)
+gtest_discover_tests(async_logger_batch_test)
 gtest_discover_tests(log_tool_test)
 
