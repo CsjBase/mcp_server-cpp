@@ -4,6 +4,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <fmt/format.h>
 #include <functional>
@@ -94,10 +95,14 @@ namespace logger
             if (!should_log(lvl))
                 return;
 
-            std::string msg = fmt::format(fmt, std::forward<Args>(args)...);
+            // 直接格式化进栈上内联 buffer(250B 内零堆分配),
+            // 避免 fmt::format 先落 std::string 再被二次拷贝
+            memory_buf_t msg_buf;
+            fmt::format_to(std::back_inserter(msg_buf), fmt, std::forward<Args>(args)...);
             // 时间戳走缓存钟(~1ms 粒度): 规避 clock_gettime 在虚拟化环境
             // 下的高开销(VM 拦截实测 ~20us/次), 热路径零系统调用
-            details::LogEvent event(utils::cached_wall_now(), loc, name_, lvl, msg);
+            details::LogEvent event(utils::cached_wall_now(), loc, name_, lvl,
+                                    std::string_view(msg_buf.data(), msg_buf.size()));
 
             sink_it_(event);
             // for (auto &sink : sinks_)

@@ -104,7 +104,7 @@ async->flush();  // 换出残余批 + 提交 flush 屏障，保证此前事件�
 
 | 策略 | 队列满时行为 | 适用场景 |
 |---|---|---|
-| `Block` | 阻塞等待队列有空位 | 不丢日志，延迟敏感 |
+| `Block` | 阻塞等待队列有空位；线程池已停止等提交失败时**同步写入兜底**（调用线程直接落盘并 flush），保证不丢日志 | 不丢日志，延迟敏感 |
 | `DiscardNew` | 丢弃新日志 | 高吞吐、允许少量丢失 |
 | `DiscardOldest` | 覆盖最旧日志 | 保留最新上下文 |
 
@@ -156,6 +156,8 @@ auto encrypt  = std::make_shared<logger::EncryptHandler>("aes-key");
 ## 线程安全与性能要点
 
 - **时间戳走后台时钟缓存**：每条日志的时间戳取自 [utils/cached_clock](../utils/README.md)（~1ms 粒度原子时间戳），规避 `clock_gettime` 在虚拟化环境下的高开销（VM 拦截实测 ~20µs/次），热路径零系统调用。代价是时间戳毫秒级粒度。
+- **格式化零堆分配**：`Logger::log()` 前端用 `fmt::format_to` 直接把消息格式化进栈上内联 buffer（250B 内零 malloc），避免先落 `std::string` 再被 Sink 二次拷贝。
+- **数字直写 + 按秒日期缓存**：格式项用展开的十进制直写（`append_pad2/pad4` 等）替代 `fmt::format_to` 的运行时格式串解析；默认 pattern 的日期前缀按秒缓存，同一秒内只拼一次字符串、其余调用直接追加（spdlog 同款策略）。
 - **前端零锁竞争**：同步 Logger 的格式化发生在调用线程；异步 Logger 前端仅做原子操作 + 打包，真正的 I/O 都在后台线程。
 - **日志事件打包**：`LogEventBuffer` 一次携带多条事件提交给线程池，摊薄任务调度开销。
 - **周期 flush**：`LoggerManager::flush_every(interval)` 可配置周期落盘，避免低频日志长期滞留缓冲区。

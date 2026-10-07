@@ -8,6 +8,55 @@ namespace logger
 {
     namespace details
     {
+        // ---- 数字直写辅助: 规避 fmt 运行时格式串解析开销 ----
+        // 默认格式每条日志约 9 个数字字段, 手写路径比 fmt::format_to
+        // (每次调用都需解析 "{:02d}" 这类运行时格式串)快一个数量级
+
+        /// 追加 2 位定宽十进制(0-99), 等价 fmt "{:02d}"
+        inline void append_pad2(memory_buf_t &dest, unsigned v)
+        {
+            char digits[2] = {static_cast<char>('0' + v / 10 % 10),
+                              static_cast<char>('0' + v % 10)};
+            dest.append(digits, digits + 2);
+        }
+
+        /// 追加 4 位定宽十进制(0-9999), 等价 fmt "{:04d}"
+        inline void append_pad4(memory_buf_t &dest, unsigned v)
+        {
+            char digits[4] = {static_cast<char>('0' + v / 1000 % 10),
+                              static_cast<char>('0' + v / 100 % 10),
+                              static_cast<char>('0' + v / 10 % 10),
+                              static_cast<char>('0' + v % 10)};
+            dest.append(digits, digits + 4);
+        }
+
+        /// 追加无填充十进制(0 输出 "0"), 等价 fmt "{}"
+        inline void append_uint(memory_buf_t &dest, unsigned long long v)
+        {
+            char digits[20];
+            int n = 0;
+            do
+            {
+                digits[n++] = static_cast<char>('0' + v % 10);
+                v /= 10;
+            } while (v != 0);
+            for (int i = n - 1; i >= 0; --i)
+                dest.push_back(digits[i]);
+        }
+
+        /// 追加无填充 3 位十进制(0-999): 毫秒热路径专用展开版
+        inline void append_uint3(memory_buf_t &dest, unsigned v)
+        {
+            char digits[3];
+            int n = 0;
+            if (v >= 100)
+                digits[n++] = static_cast<char>('0' + v / 100 % 10);
+            if (v >= 10)
+                digits[n++] = static_cast<char>('0' + v / 10 % 10);
+            digits[n++] = static_cast<char>('0' + v % 10);
+            dest.append(digits, digits + n);
+        }
+
         //%l 'l'
         class LevelFormatItem final : public LogFormatItem
         {
@@ -79,17 +128,15 @@ namespace logger
                 dest.push_back(' ');
                 dest.append(std::string_view(months[static_cast<size_t>(tm_time.tm_mon)]));
                 dest.push_back(' ');
-                fmt::format_to(std::back_inserter(dest), "{}", tm_time.tm_mday);
+                append_uint(dest, static_cast<unsigned long long>(tm_time.tm_mday));
                 dest.push_back(' ');
-                // time
-
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_hour);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_hour));
                 dest.push_back(':');
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_min);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_min));
                 dest.push_back(':');
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_sec);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_sec));
                 dest.push_back(' ');
-                fmt::format_to(std::back_inserter(dest), "{}", tm_time.tm_year + 1900);
+                append_uint(dest, static_cast<unsigned long long>(tm_time.tm_year + 1900));
             }
         };
 
@@ -99,7 +146,7 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &tm_time, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{}", tm_time.tm_year + 1900);
+                append_uint(dest, static_cast<unsigned long long>(tm_time.tm_year + 1900));
             }
         };
 
@@ -109,7 +156,7 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &tm_time, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_mon + 1);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_mon + 1));
             }
         };
 
@@ -119,7 +166,7 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &tm_time, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_mday);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_mday));
             }
         };
 
@@ -129,7 +176,7 @@ namespace logger
         public:
             void format(const LogEvent &, const std::tm &tm_time, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_hour);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_hour));
             }
         };
 
@@ -142,7 +189,7 @@ namespace logger
                 int h = tm_time.tm_hour % 12;
                 if (h == 0)
                     h = 12;
-                fmt::format_to(std::back_inserter(dest), "{:02d}", h);
+                append_pad2(dest, static_cast<unsigned>(h));
             }
         };
 
@@ -152,7 +199,7 @@ namespace logger
         public:
             void format(const LogEvent &, const std::tm &tm_time, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_min);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_min));
             }
         };
 
@@ -162,7 +209,7 @@ namespace logger
         public:
             void format(const LogEvent &, const std::tm &tm_time, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_sec);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_sec));
             }
         };
 
@@ -172,11 +219,11 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &, memory_buf_t &dest) override
             {
-                auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                              event.time.time_since_epoch())
-                              .count() %
-                          1000;
-                fmt::format_to(std::back_inserter(dest), "{}", ms);
+                auto ms = static_cast<unsigned>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                                    event.time.time_since_epoch())
+                                                    .count() %
+                                                1000);
+                append_uint3(dest, ms);
             }
         };
 
@@ -186,11 +233,11 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &, memory_buf_t &dest) override
             {
-                auto us = std::chrono::duration_cast<std::chrono::microseconds>(
-                              event.time.time_since_epoch())
-                              .count() %
-                          1000000;
-                fmt::format_to(std::back_inserter(dest), "{}", us);
+                auto us = static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::microseconds>(
+                                                              event.time.time_since_epoch())
+                                                              .count() %
+                                                          1000000);
+                append_uint(dest, us);
             }
         };
 
@@ -200,11 +247,11 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &, memory_buf_t &dest) override
             {
-                auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                              event.time.time_since_epoch())
-                              .count() %
-                          1000000000;
-                fmt::format_to(std::back_inserter(dest), "{}", ns);
+                auto ns = static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                                              event.time.time_since_epoch())
+                                                              .count() %
+                                                          1000000000);
+                append_uint(dest, ns);
             }
         };
 
@@ -214,10 +261,10 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &, memory_buf_t &dest) override
             {
-                auto secs = std::chrono::duration_cast<std::chrono::seconds>(
-                                event.time.time_since_epoch())
-                                .count();
-                fmt::format_to(std::back_inserter(dest), "{}", secs);
+                auto secs = static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::seconds>(
+                                                                event.time.time_since_epoch())
+                                                                .count());
+                append_uint(dest, secs);
             }
         };
 
@@ -234,9 +281,13 @@ namespace logger
                 // 确定 am/pm
                 const char *ampm = tm_time.tm_hour >= 12 ? "pm" : "am";
 
-                // 格式化输出
-                fmt::format_to(std::back_inserter(dest), "{:02d}:{:02d}:{:02d} {}",
-                               h, tm_time.tm_min, tm_time.tm_sec, ampm);
+                append_pad2(dest, static_cast<unsigned>(h));
+                dest.push_back(':');
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_min));
+                dest.push_back(':');
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_sec));
+                dest.push_back(' ');
+                dest.append(ampm, ampm + 2);
             }
         };
 
@@ -246,8 +297,9 @@ namespace logger
         public:
             void format(const LogEvent &, const std::tm &tm_time, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{:02d}:{:02d}",
-                               tm_time.tm_hour, tm_time.tm_min);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_hour));
+                dest.push_back(':');
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_min));
             }
         };
 
@@ -257,8 +309,11 @@ namespace logger
         public:
             void format(const LogEvent &, const std::tm &tm_time, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{:02d}:{:02d}:{:02d}",
-                               tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec);
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_hour));
+                dest.push_back(':');
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_min));
+                dest.push_back(':');
+                append_pad2(dest, static_cast<unsigned>(tm_time.tm_sec));
             }
         };
 
@@ -281,8 +336,10 @@ namespace logger
                         offset_secs = -offset_secs;
                     long offset_h = offset_secs / 3600;
                     long offset_m = (offset_secs % 3600) / 60;
-                    fmt::format_to(std::back_inserter(dest), "{}{:02d}:{:02d}",
-                                   sign, offset_h, offset_m);
+                    dest.push_back(sign);
+                    append_pad2(dest, static_cast<unsigned>(offset_h));
+                    dest.push_back(':');
+                    append_pad2(dest, static_cast<unsigned>(offset_m));
                 }
             }
         };
@@ -293,7 +350,7 @@ namespace logger
         public:
             void format(const LogEvent &event, const std::tm &, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{}", event.thread_id);
+                append_uint(dest, static_cast<unsigned long long>(event.thread_id));
             }
         };
 
@@ -303,7 +360,7 @@ namespace logger
         public:
             void format(const LogEvent &, const std::tm &, memory_buf_t &dest) override
             {
-                fmt::format_to(std::back_inserter(dest), "{}", ::getpid());
+                append_uint(dest, static_cast<unsigned long long>(::getpid()));
             }
         };
 
@@ -315,7 +372,7 @@ namespace logger
             {
                 if (event.source.line > 0)
                 {
-                    fmt::format_to(std::back_inserter(dest), "{}", event.source.line);
+                    append_uint(dest, static_cast<unsigned long long>(event.source.line));
                 }
             }
         };
@@ -405,69 +462,37 @@ namespace logger
         class DefaultLogFormatItem final : public LogFormatItem
         {
         public:
-            DefaultLogFormatItem()
-            {
-                // // [%Y-%m-%d %H:%M:%S.%e]
-                // items_.push_back(std::make_unique<CharFormatItem>('['));
-                // items_.push_back(std::make_unique<YearFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>('-'));
-                // items_.push_back(std::make_unique<MonthNumberFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>('-'));
-                // items_.push_back(std::make_unique<DayFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>(' '));
-                // items_.push_back(std::make_unique<Hours24FormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>(':'));
-                // items_.push_back(std::make_unique<MinutesFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>(':'));
-                // items_.push_back(std::make_unique<SecondsFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>('.'));
-                // items_.push_back(std::make_unique<MillisecondsFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>(']'));
-                // items_.push_back(std::make_unique<CharFormatItem>(' '));
-                // // [%n]
-                // items_.push_back(std::make_unique<CharFormatItem>('['));
-                // items_.push_back(std::make_unique<LoggerNameFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>(']'));
-                // items_.push_back(std::make_unique<CharFormatItem>(' '));
-                // // [%l]
-                // items_.push_back(std::make_unique<CharFormatItem>('['));
-                // items_.push_back(std::make_unique<ColorStartFormatItem>());
-                // items_.push_back(std::make_unique<LevelFormatItem>());
-                // items_.push_back(std::make_unique<ColorEndFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>(']'));
-                // items_.push_back(std::make_unique<CharFormatItem>(' '));
-                // // [%s:%#]
-                // items_.push_back(std::make_unique<CharFormatItem>('['));
-                // items_.push_back(std::make_unique<SourceFileFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>(':'));
-                // items_.push_back(std::make_unique<SourceLineFormatItem>());
-                // items_.push_back(std::make_unique<CharFormatItem>(']'));
-                // items_.push_back(std::make_unique<CharFormatItem>(' '));
-                // // %v
-                // items_.push_back(std::make_unique<PayloadFormatItem>());
-            }
             void format(const LogEvent &event, const std::tm &tm_time, memory_buf_t &dest) override
             {
-
-                // [%Y-%m-%d %H:%M:%S.%e]
-                dest.push_back('[');
-                fmt::format_to(std::back_inserter(dest), "{}", tm_time.tm_year + 1900);
-                dest.push_back('-');
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_mon + 1);
-                dest.push_back('-');
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_mday);
-                dest.push_back(' ');
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_hour);
-                dest.push_back(':');
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_min);
-                dest.push_back(':');
-                fmt::format_to(std::back_inserter(dest), "{:02d}", tm_time.tm_sec);
+                // [%Y-%m-%d %H:%M:%S.%e] —— 日期部分按秒缓存:
+                // 每秒只拼一次字符串, 其余调用直接追加缓存(spdlog 同款策略)
+                auto secs = std::chrono::duration_cast<std::chrono::seconds>(
+                                event.time.time_since_epoch())
+                                .count();
+                if (secs != cached_secs_)
+                {
+                    cached_secs_ = secs;
+                    date_buf_.clear();
+                    date_buf_.push_back('[');
+                    append_pad4(date_buf_, static_cast<unsigned>(tm_time.tm_year + 1900));
+                    date_buf_.push_back('-');
+                    append_pad2(date_buf_, static_cast<unsigned>(tm_time.tm_mon + 1));
+                    date_buf_.push_back('-');
+                    append_pad2(date_buf_, static_cast<unsigned>(tm_time.tm_mday));
+                    date_buf_.push_back(' ');
+                    append_pad2(date_buf_, static_cast<unsigned>(tm_time.tm_hour));
+                    date_buf_.push_back(':');
+                    append_pad2(date_buf_, static_cast<unsigned>(tm_time.tm_min));
+                    date_buf_.push_back(':');
+                    append_pad2(date_buf_, static_cast<unsigned>(tm_time.tm_sec));
+                }
+                dest.append(std::string_view(date_buf_.data(), date_buf_.size()));
                 dest.push_back('.');
-                auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                              event.time.time_since_epoch())
-                              .count() %
-                          1000;
-                fmt::format_to(std::back_inserter(dest), "{}", ms);
+                auto ms = static_cast<unsigned>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                                    event.time.time_since_epoch())
+                                                    .count() %
+                                                1000);
+                append_uint3(dest, ms);
                 dest.push_back(']');
                 dest.push_back(' ');
                 // [%n]
@@ -491,7 +516,7 @@ namespace logger
                     dest.push_back('[');
                     dest.append(std::string_view(event.source.filename));
                     dest.push_back(':');
-                    fmt::format_to(std::back_inserter(dest), "{}", event.source.line);
+                    append_uint(dest, static_cast<unsigned long long>(event.source.line));
                     dest.push_back(']');
                     dest.push_back(' ');
                 }
@@ -500,9 +525,12 @@ namespace logger
             }
 
         private:
-            // std::vector<std::unique_ptr<LogFormatItem>> items_;
+            /// 上次拼装的日期所属秒(epoch), 首次 -1 强制拼装
+            long long cached_secs_{-1};
+            /// 按秒缓存的 "[YYYY-MM-DD HH:MM:SS" 前缀
+            memory_buf_t date_buf_;
         };
-        //
+
         class StringFormatItem final : public LogFormatItem
         {
         public:
