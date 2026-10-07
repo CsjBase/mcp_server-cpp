@@ -62,7 +62,8 @@ namespace
     {
         std::promise<void> p;
         auto f = p.get_future();
-        tp->submit([&p] { p.set_value(); });
+        tp->submit([&p]
+                   { p.set_value(); });
         f.wait();
     }
 
@@ -110,7 +111,7 @@ namespace
                 best.nsPerOp = 1e9 / ops;
             }
         }
-        tp->stop_gracefully();
+        // tp->stop_gracefully();
         return best;
     }
 

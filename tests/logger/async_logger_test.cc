@@ -12,7 +12,7 @@ using namespace logger;
 void test_async_logger()
 {
     auto tp = std::make_shared<utils::ThreadPool>(1, 1024);
-    auto async_logger = std::make_shared<AsyncLogger>("test", std::make_shared<BasicFileLogSinkMT>("../../../logs/test_async_logger.log"), tp);
+    auto async_logger = std::make_shared<AsyncLogger>("test", std::make_shared<BasicFileLogSinkMT>("../../../logs/test_async_logger.log", true), tp);
     async_logger->set_level(LogLevel::Debug);
     async_logger->debug("this is a debug message");
     async_logger->info("this is an info message");
@@ -20,13 +20,13 @@ void test_async_logger()
     async_logger->error("this is an error message");
 
     utils::sleep_for_millis(500);
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 1000000; i++)
     {
         async_logger->debug("this is a debug message {}", i);
     }
 
     utils::sleep_for_millis(500);
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 1000000; i++)
     {
         async_logger->log(SRC_LOCATION, LogLevel::Debug, "this is a debug message {}", i);
     }

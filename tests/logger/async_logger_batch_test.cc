@@ -205,4 +205,62 @@ namespace
         EXPECT_EQ(sink->count(), (size_t)5);
     }
 
+    // 池先停止再析构: 残余批同步写入兜底, 不丢事件
+    TEST(AsyncLoggerBatch, PoolStoppedBeforeDestructorNoLoss)
+    {
+        auto tp = std::make_shared<utils::ThreadPool>(1, 1024);
+        auto sink = std::make_shared<CountingSink>();
+        {
+            auto logger = std::make_shared<AsyncLogger>(
+                "stopped_dtor", sink, tp, AsyncOverflowStrategy::Block,
+                /*batchSize=*/10'000, /*flushInterval=*/std::chrono::hours(1));
+            for (int i = 0; i < 5; ++i)
+                logger->info("stopped-dtor-{}", i);
+            tp->stop_gracefully();
+            // 离开作用域 → 析构时池已停止, 走同步写入兜底
+        }
+        EXPECT_EQ(sink->count(), (size_t)5);
+    }
+
+    // 池先析构(在途批任务持有 logger, logger 晚于池析构):
+    // 析构时 weak_ptr 已过期, 残余批同步写入兜底, 不丢事件
+    TEST(AsyncLoggerBatch, PoolDestroyedBeforeLoggerNoLoss)
+    {
+        auto sink = std::make_shared<CountingSink>();
+        std::shared_ptr<AsyncLogger> logger;
+        {
+            auto tp = std::make_shared<utils::ThreadPool>(1, 1024);
+            logger = std::make_shared<AsyncLogger>(
+                "pool_first", sink, tp, AsyncOverflowStrategy::Block,
+                /*batchSize=*/256, /*flushInterval=*/std::chrono::hours(1));
+            // 1 整批(256, 已提交) + 残余 10 条(滞留在 pending)
+            for (int i = 0; i < 266; ++i)
+                logger->info("pool-first-{}", i);
+            // tp 先析构(排空已提交任务, 256 条落盘)
+        }
+        // logger 后析构: weak_ptr 已过期 → 同步兜底写残余 10 条
+        logger.reset();
+        EXPECT_EQ(sink->count(), (size_t)266);
+    }
+
+    // 池停止后继续打日志(Block 策略): 批提交失败走同步写入兜底, 不丢事件
+    TEST(AsyncLoggerBatch, BlockFallbackAfterPoolStoppedNoLoss)
+    {
+        auto tp = std::make_shared<utils::ThreadPool>(1, 1024);
+        auto sink = std::make_shared<CountingSink>();
+        auto logger = std::make_shared<AsyncLogger>(
+            "stopped_block", sink, tp, AsyncOverflowStrategy::Block,
+            /*batchSize=*/64, /*flushInterval=*/std::chrono::hours(1));
+        tp->stop_gracefully();
+
+        // 300 条 > 批大小: 每次批满提交都会失败并同步写入
+        for (int i = 0; i < 300; ++i)
+            logger->info("stopped-block-{}", i);
+        EXPECT_EQ(sink->count(), (size_t)256); // 4 整批已同步兜底写入
+
+        // 残余批经 flush 换出后同样走同步兜底
+        logger->flush();
+        EXPECT_EQ(sink->count(), (size_t)300);
+    }
+
 } // namespace

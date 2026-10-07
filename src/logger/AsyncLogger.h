@@ -73,9 +73,15 @@ namespace logger
         /// 换出当前批(调用方持锁), 空批返回 nullptr
         std::shared_ptr<std::vector<details::LogEventBuffer>> takePendingBatch_();
 
-        /// 按溢出策略把批投递到线程池
+        /// 按溢出策略把批投递到线程池; Block 策略下提交失败
+        /// (线程池已停止)时同步写入兜底, 保证不丢日志
         void submitBatch_(const std::shared_ptr<utils::ThreadPool> &pool,
                           std::shared_ptr<std::vector<details::LogEventBuffer>> batch);
+
+        /// 同步把批写入 sinks(线程池不可用时兜底, 调用线程执行, 异常吞掉)
+        static void writeBatchToSinksSync_(
+            const std::vector<std::shared_ptr<LogSink>> &sinks,
+            const std::vector<details::LogEventBuffer> &batch);
 
     private:
         std::weak_ptr<utils::ThreadPool> thread_pool_;
