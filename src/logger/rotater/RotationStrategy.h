@@ -34,6 +34,12 @@ namespace logger
             return max_files_;
         }
 
+        /// 全局轮转后处理线程池(供测试/监控等待任务排空, 勿提交业务任务)
+        static utils::ThreadPool *rotating_pool()
+        {
+            return rotating_thread_pool_.get();
+        }
+
     protected:
         /// @brief  轮转策略专用线程池，只开1个线程串行执行轮转任务防止错乱，只在启用RotatedFileHandler时启用
         static std::unique_ptr<utils::ThreadPool> rotating_thread_pool_;
