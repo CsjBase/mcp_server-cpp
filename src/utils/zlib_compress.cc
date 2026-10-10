@@ -42,15 +42,16 @@ namespace utils
         compress_stream_->next_out = (Bytef *)(output);
         compress_stream_->avail_out = static_cast<uInt>(output_size);
 
-        int ret = Z_OK;
-        do
+        // Z_FINISH 收尾为完整 zlib 流(含 adler32 尾): 单次调用即一条
+        // 完整流, 分块压缩时多条完整流拼接后 inflate 可自动接续解压
+        // (RFC 1950 要求解压端支持拼接流);
+        // Z_BUF_ERROR 表示输出缓冲不足且重试无法推进(状态不变),
+        // 继续循环只会死循环 —— 直接判失败, 由调用方给出足够大的缓冲
+        int ret = deflate(compress_stream_.get(), Z_FINISH);
+        if (ret != Z_STREAM_END)
         {
-            ret = deflate(compress_stream_.get(), Z_SYNC_FLUSH);
-            if (ret != Z_OK && ret != Z_BUF_ERROR && ret != Z_STREAM_END)
-            {
-                return 0;
-            }
-        } while (ret == Z_BUF_ERROR);
+            return 0;
+        }
 
         size_t out_len = output_size - compress_stream_->avail_out;
         return out_len;
@@ -80,7 +81,23 @@ namespace utils
             uncompress_stream_->next_out = (Bytef *)buffer;
             uncompress_stream_->avail_out = sizeof(buffer);
             int ret = inflate(uncompress_stream_.get(), Z_SYNC_FLUSH);
-            if (ret != Z_OK && ret != Z_STREAM_END)
+            if (ret == Z_STREAM_END)
+            {
+                output.append(buffer, sizeof(buffer) - uncompress_stream_->avail_out);
+                if (uncompress_stream_->avail_in > 0)
+                {
+                    // 拼接流(分块压缩产物, 每条都是完整 zlib 流):
+                    // 显式重置流后继续解压下一条, 避免同流续接导致的死循环
+                    Bytef *rest = uncompress_stream_->next_in;
+                    uInt rest_len = uncompress_stream_->avail_in;
+                    reset_uncompress_stream_();
+                    uncompress_stream_->next_in = rest;
+                    uncompress_stream_->avail_in = rest_len;
+                    continue;
+                }
+                break;
+            }
+            if (ret != Z_OK)
             {
                 return "";
             }
@@ -122,7 +139,10 @@ namespace utils
 
     size_t ZlibCompress::compressed_bound(size_t input_size)
     {
-        return input_size + 10;
+        // 保守上界: deflate 对不可压缩数据的输出最多比原数据大约 0.03%
+        // (deflateBound), 这里留 1/8 余量覆盖 zlib 头与同步标记开销;
+        // 缓冲不足会在 compress 内触发 Z_BUF_ERROR 判失败(压缩中断)
+        return input_size + input_size / 8 + 64;
     }
 
 }

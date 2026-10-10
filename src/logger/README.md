@@ -136,6 +136,12 @@ auto encrypt  = std::make_shared<logger::EncryptHandler>("aes-key");
 // 处理器间可组合（CompositeHandler），轮转后按顺序执行
 ```
 
+处理链运行在全局单线程轮转池（`RotationStrategy::rotating_pool()`，256 任务队列）上异步执行：轮转本身（rename + reopen）仍在写路径内（实测同步落盘 387 万 → 345 万 ops/s，约 11% 开销），压缩/加密不阻塞业务线程（异步场景 488 万 vs 纯落盘 457 万，几乎无差异）。注意：若压缩速率跟不上轮转频率，轮转池队列满时写路径会背压阻塞（日志洪峰下的保护机制）——端到端（含压缩链排空）实测同步/异步均收敛至 ~130 万 ops/s（zlib level9 约 100MB/s 的链吞吐上限），瓶颈在链而非日志器，与同步/异步无关。
+
+以上数据采集条件（`logger_bench`）：单条日志约 82B（默认 pattern）、/tmp（xfs 物理盘）、每场景预热 10 万 + 3 轮 × 100 万条取最优、异步池 1 线程 × 8192 队列、轮转阈值 1MB。不同配置场景的吞吐不可直接比较。
+
+压缩为 1MB 分块流式处理（内存 O(1MB)，不再整文件读入），每块是一条完整 zlib 流（`Z_FINISH` 收尾），拼接产物标准 zlib 工具可直接解压；空文件轮转产出合法空流，处理链不断裂。`ZlibCompress::compressed_bound` 使用保守上界（+1/8 余量），不可压缩内容（随机/密文类日志）不会触发输出缓冲溢出。
+
 ## Pattern 格式
 
 支持 spdlog 风格 pattern，常用项：
