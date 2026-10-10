@@ -101,6 +101,7 @@ tx->commit();   // 失败时 rollback()
 ```
 
 - **借/还零互斥**：空闲连接存在有界无锁 MPMC 队列（[utils/mpmc_bounded_queue.h](../utils/mpmc_bounded_queue.h)）中，借出 = 无锁 dequeue，归还 = 无锁 enqueue。
+- **瞬态假满重试**：Vyukov 队列在消费者抢占槽位后、seq 归还前被抢占的纳秒级窗口内会短暂返回"满"（实测队列仅 ~35 项时仍可触发）。队列容量 ≥ maxSize，稳态不可能真满，故三处入队（归还/建连完成/维护回队）统一走 `enqueueIdle` 自旋重试——连接绝不丢弃，超过阈值单次 WARN 报告池状态。
 - **时间戳走后台时钟缓存**：借出时间、活跃时间与超时判定统一使用 [utils/cached_clock](../utils/README.md)（~1ms 粒度原子单调钟）——阈值均为秒级，误差 <0.1%，同时规避 `clock_gettime` 在虚拟化环境的高开销。
 - **池空等待协议**：`waiterCount_` 原子量做快速路径判断，只有确实存在等待者时才触碰 mutex/cv，空池以外零锁竞争。
 - **维护线程**：每秒将空闲队列一次性无锁排空，独占执行保活（ping）、超时剔除（空闲超时/最大生命周期）、按需补充（异步创建线程池）、借出泄漏检测（borrowedTimeout），全程不阻塞业务线程。

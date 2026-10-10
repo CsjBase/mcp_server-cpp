@@ -264,6 +264,22 @@ namespace db
         return conn;
     }
 
+    void DBPool::enqueueIdle(DBConnection *conn)
+    {
+        // 队列容量 ≥ maxSize ≥ 空闲连接数, 稳态下不可能真满;
+        // enqueue 返回 false 只可能是消费者未归还槽位的瞬态窗口,
+        // 自旋重试直至成功, 连接绝不丢弃
+        int spins = 0;
+        while (!idleQueue_.enqueue(conn))
+        {
+            std::this_thread::yield();
+            ++spins;
+        }
+        if (spins >= 1000)
+            DB_LOG_WARN("DBPool::enqueueIdle() transient queue-full, spins={} total={} idle={} cap={}",
+                        spins, totalConnCount_.load(), idleCount_.load(), idleQueue_.capacity());
+    }
+
     void DBPool::releaseConnection(DBConnection *conn)
     {
         if (!conn)
@@ -277,14 +293,7 @@ namespace db
         {
             conn->refreshLastUsedTime();
             conn->setState(ConnState::Idle);
-            // 无锁入队(队列容量≥最大连接数, 理论上不会满; 防御性自旋)
-            int spins = 0;
-            while (!idleQueue_.enqueue(conn))
-            {
-                if (++spins % 1000 == 0)
-                    DB_LOG_ERROR("DBPool::releaseConnection() idle queue full, spinning...");
-                std::this_thread::yield();
-            }
+            enqueueIdle(conn);
             idleCount_.fetch_add(1, std::memory_order_relaxed);
             // 有等待者才加锁通知
             if (waiterCount_.load(std::memory_order_acquire) > 0)
@@ -377,7 +386,7 @@ namespace db
                 continue;
             }
             conn->setState(ConnState::Idle);
-            idleQueue_.enqueue(conn);
+            enqueueIdle(conn);
             idleCount_.fetch_add(1, std::memory_order_relaxed);
             reenqueued = true;
         }
@@ -445,7 +454,7 @@ namespace db
             allConns_.push_back(wrap);
         }
         wrap->setState(ConnState::Idle);
-        idleQueue_.enqueue(wrap);
+        enqueueIdle(wrap);
         idleCount_.fetch_add(1, std::memory_order_relaxed);
         // 新连接入队后唤醒等待者
         if (waiterCount_.load(std::memory_order_acquire) > 0)

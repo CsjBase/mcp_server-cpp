@@ -143,6 +143,12 @@ namespace db
         DBConnection *waitForIdle();
         void notifyMaintenance();
 
+        /// 空闲连接回队(带瞬态假满重试): Vyukov 队列在消费者抢占槽位
+        /// 后、seq 归还前被抢占的纳秒级窗口内会短暂返回 false(实测
+        /// 队列仅 ~35 项时仍可触发), 连接不能丢弃, 自旋直至成功;
+        /// 若重试超过阈值, 单次 WARN 报告池状态供诊断
+        void enqueueIdle(DBConnection *conn);
+
         IDBFactory::ptr factory_;
         DBConfig dbconfig_;
 

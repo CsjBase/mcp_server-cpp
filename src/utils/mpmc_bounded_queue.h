@@ -65,7 +65,10 @@ namespace utils
                 }
                 else if (dif < 0)
                 {
-                    return false; // 槽仍被上一轮数据占用 → 队列满
+                    // 槽仍被上一轮数据占用 → 队列满。
+                    // 注意: 消费者 CAS 抢占槽位后、写回 seq 前被抢占的
+                    // 纳秒级窗口也会落入此分支(瞬态假满), 调用方需重试
+                    return false;
                 }
                 else
                 {
