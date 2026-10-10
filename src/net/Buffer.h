@@ -50,6 +50,35 @@ namespace net
             return begin() + m_readerIndex;
         }
 
+        int8_t peekInt8() const
+        {
+            assert(readableBytes() >= sizeof(int8_t));
+            int8_t x = *peek();
+            return x;
+        }
+        uint8_t peekUint8() const
+        {
+            assert(readableBytes() >= sizeof(uint8_t));
+            uint8_t x = *peek();
+            return x;
+        }
+#define XX(typename, type)                       \
+    type peek##typename() const                  \
+    {                                            \
+        assert(readableBytes() >= sizeof(type)); \
+        type result = 0;                         \
+        memcpy(&result, peek(), sizeof(type));   \
+        return byteswapOnLittleEndian(result);   \
+    }
+
+        XX(Int16, int16_t)
+        XX(Int32, int32_t)
+        XX(Int64, int64_t)
+        XX(Uint16, uint16_t)
+        XX(Uint32, uint32_t)
+        XX(Uint64, uint64_t)
+#undef XX
+
         // onMessage string <- Buffer
         void retrieve(size_t len)
         {
@@ -82,14 +111,14 @@ namespace net
         }
 
         // 需要检查 readableBytes() >= sizeof(type)
-        int8_t readInt8()
+        int8_t retrieveInt8()
         {
             assert(readableBytes() >= sizeof(int8_t));
             int8_t result = *peek();
             retrieve(sizeof(int8_t));
             return result;
         }
-        uint8_t readUint8()
+        uint8_t retrieveUint8()
         {
             assert(readableBytes() >= sizeof(uint8_t));
             uint8_t result = *peek();
@@ -97,97 +126,27 @@ namespace net
             return result;
         }
 
-#define XX(type)                             \
-    assert(readableBytes() >= sizeof(type)); \
-    type result = 0;                         \
-    memcpy(&result, peek(), sizeof(type));   \
-    retrieve(sizeof(type));                  \
-    return byteswapOnLittleEndian(result);
+#define XX(typename, type)                       \
+    type retrieve##typename()                    \
+    {                                            \
+        assert(readableBytes() >= sizeof(type)); \
+        type result;                             \
+        memcpy(&result, peek(), sizeof(type));   \
+        retrieve(sizeof(type));                  \
+        return byteswapOnLittleEndian(result);   \
+    }
 
-        int16_t readInt16()
-        {
-            XX(int16_t);
-        }
-        uint16_t readUint16()
-        {
-            XX(uint16_t);
-        }
-
-        int32_t readInt32()
-        {
-            XX(int32_t);
-        }
-        uint32_t readUint32()
-        {
-            XX(uint32_t);
-        }
-
-        int64_t readInt64()
-        {
-            XX(int64_t);
-        }
-        uint64_t readUint64()
-        {
-            XX(uint64_t);
-        }
+        XX(Int16, int16_t)
+        XX(Int32, int32_t)
+        XX(Int64, int64_t)
+        XX(Uint16, uint16_t)
+        XX(Uint32, uint32_t)
+        XX(Uint64, uint64_t)
 #undef XX
 
         std::string readString(size_t len)
         {
             return retrieveAsString(len);
-        }
-
-        std::string readStringForInt()
-        {
-            uint32_t len = readUint32();
-            return retrieveAsString(len);
-        }
-
-#define XX(type)                             \
-    assert(readableBytes() >= sizeof(type)); \
-    type result = 0;                         \
-    memcpy(&result, peek(), sizeof(type));   \
-    return byteswapOnLittleEndian(result);
-
-        int64_t peekInt64() const
-        {
-            XX(int64_t);
-        }
-        uint64_t peekUint64() const
-        {
-            XX(uint64_t);
-        }
-
-        int32_t peekInt32() const
-        {
-            XX(int32_t);
-        }
-        uint32_t peekUint32() const
-        {
-            XX(uint32_t);
-        }
-
-        int16_t peekInt16() const
-        {
-            XX(int16_t);
-        }
-        uint16_t peekUint16() const
-        {
-            XX(uint16_t);
-        }
-#undef XX
-
-        int8_t peekInt8() const
-        {
-            assert(readableBytes() >= sizeof(int8_t));
-            int8_t x = *peek();
-            return x;
-        }
-        uint8_t peekUint8() const
-        {
-            assert(readableBytes() >= sizeof(uint8_t));
-            uint8_t x = *peek();
-            return x;
         }
 
         // m_buffer.size() - m_writerIndex    len  确保可写缓冲区能容纳可写数据
@@ -211,28 +170,27 @@ namespace net
             append((const char *)data, len);
         }
 
-        void writeInt8(int8_t v)
+        void appendInt8(int8_t v)
         {
             append(&v, sizeof(v));
         }
-        void writeUint8(uint8_t v)
+        void appendUint8(uint8_t v)
         {
             append(&v, sizeof(v));
         }
 #define XX(typename, type)                   \
-    void write##typename(type v)             \
+    void append##typename(type v)            \
     {                                        \
         type vb = byteswapOnLittleEndian(v); \
         append(&vb, sizeof(vb));             \
     }
-        // XX(Uint8, uint8_t)
-        XX(Uint16, uint16_t)
-        XX(Uint32, uint32_t)
-        XX(Uint64, uint64_t)
-        // XX(Int8, int8_t)
+
         XX(Int16, int16_t)
         XX(Int32, int32_t)
         XX(Int64, int64_t)
+        XX(Uint16, uint16_t)
+        XX(Uint32, uint32_t)
+        XX(Uint64, uint64_t)
 #undef XX
 
         void writeString(const std::string &v)
@@ -240,11 +198,35 @@ namespace net
             append(v.data(), v.size());
         }
 
-        void writeStringForInt(const std::string &v)
+        void prepend(const void * /*restrict*/ data, size_t len)
         {
-            writeUint32(v.size());
-            writeString(v);
+            assert(len <= prependableBytes());
+            m_readerIndex -= len;
+            const char *d = static_cast<const char *>(data);
+            std::copy(d, d + len, begin() + m_readerIndex);
         }
+        void prependInt8(int8_t x)
+        {
+            prepend(&x, sizeof x);
+        }
+        void prependUint8(uint8_t x)
+        {
+            prepend(&x, sizeof x);
+        }
+#define XX(typename, type)                     \
+    void prepend##typename(type v)             \
+    {                                          \
+        type data = byteswapOnLittleEndian(v); \
+        prepend(&data, sizeof data);           \
+    }
+
+        XX(Int16, int16_t)
+        XX(Int32, int32_t)
+        XX(Int64, int64_t)
+        XX(Uint16, uint16_t)
+        XX(Uint32, uint32_t)
+        XX(Uint64, uint64_t)
+#undef XX
 
         char *beginWrite()
         {
@@ -291,5 +273,4 @@ namespace net
         size_t m_readerIndex;
         size_t m_writerIndex;
     };
-
 }
