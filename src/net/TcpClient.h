@@ -9,6 +9,7 @@ namespace net
 {
     class TcpClient
     {
+    public:
         TcpClient(EventLoop *loop, const Address::ptr serverAddr, const std::string &nameArg = "");
         ~TcpClient();
         TcpClient(const TcpClient &) = delete;

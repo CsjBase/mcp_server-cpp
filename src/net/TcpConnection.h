@@ -7,6 +7,7 @@
 #include "net/CallBacks.h"
 
 #include <any>
+#include <atomic>
 
 namespace net
 {
@@ -27,12 +28,16 @@ namespace net
         Address::ptr localAddress() const { return m_localAddr; }
         Address::ptr peerAddress() const { return m_peerAddr; }
 
-        bool connected() const { return m_state == StateE::kConnected; }
+        bool connected() const { return m_state.load() == StateE::kConnected; }
 
         // 发送数据
         void send(const void *message, int len);
         void send(const std::string &buf);
         void send(Buffer *buf);
+        // 设置 TCP_NODELAY（禁用 Nagle）：小包立即发出，避免与延迟 ACK 叠加。
+        // 仅 setsockopt，不涉及 loop 状态，任意线程可调用；
+        // 通常在 connectionCallback（连接建立时）调用
+        void setTcpNoDelay(bool on);
         // 关闭连接
         void shutdown();
 
@@ -87,11 +92,11 @@ namespace net
             kDisconnecting
         };
 
-        void setState(StateE state) { m_state = state; }
+        void setState(StateE state) { m_state.store(state); }
 
         EventLoop *m_loop;
         const std::string m_name;
-        StateE m_state;
+        std::atomic<StateE> m_state; // 跨线程访问（send/shutdown 可在任意线程调用），必须原子
         std::unique_ptr<Socket> m_socket;
         Channel::ptr m_channel;
         Address::ptr m_localAddr;

@@ -35,7 +35,7 @@ namespace net
 
     void TcpConnection::send(const void *message, int len)
     {
-        if (m_state == StateE::kConnected)
+        if (m_state.load() == StateE::kConnected)
         {
             if (m_loop->isInLoopThread())
             {
@@ -52,7 +52,7 @@ namespace net
 
     void TcpConnection::send(const std::string &buf)
     {
-        if (m_state == StateE::kConnected)
+        if (m_state.load() == StateE::kConnected)
         {
             if (m_loop->isInLoopThread())
             {
@@ -69,7 +69,7 @@ namespace net
 
     void TcpConnection::send(Buffer *buf)
     {
-        if (m_state == StateE::kConnected)
+        if (m_state.load() == StateE::kConnected)
         {
             if (m_loop->isInLoopThread())
             {
@@ -85,11 +85,18 @@ namespace net
         }
     }
 
+    void TcpConnection::setTcpNoDelay(bool on)
+    {
+        m_socket->setTcpNoDelay(on);
+    }
+
     void TcpConnection::shutdown()
     {
-        if (m_state == StateE::kConnected)
+        // CAS 保证 kConnected -> kDisconnecting 恰好发生一次，
+        // 并发调用时只有一个线程会入队 shutdownInLoop
+        StateE expected = StateE::kConnected;
+        if (m_state.compare_exchange_strong(expected, StateE::kDisconnecting))
         {
-            setState(StateE::kDisconnecting);
             m_loop->runInLoop(
                 std::bind(&TcpConnection::shutdownInLoop, this));
         }
@@ -111,7 +118,7 @@ namespace net
     {
         m_loop->assertInLoopThread();
 
-        if (m_state == StateE::kConnected)
+        if (m_state.load() == StateE::kConnected)
         {
             setState(StateE::kDisconnected);
             m_channel->disableAll(); // 把channel的所有感兴趣的事件，从poller中delete
@@ -162,7 +169,7 @@ namespace net
                         // 唤醒loop_对象的thread线程，执行回调
                         m_loop->queueInLoop(std::bind(m_writeCompleteCallback, shared_from_this()));
                     }
-                    if (m_state == StateE::kDisconnecting)
+                    if (m_state.load() == StateE::kDisconnecting)
                     {
                         shutdownInLoop();
                     }
@@ -202,13 +209,13 @@ namespace net
         }
         else
         {
-            NET_LOG_ERROR("TcpConnection::handleError name:{}  - SO_ERROR:", m_name, optval);
+            NET_LOG_ERROR("TcpConnection::handleError name:{}  - SO_ERROR:{}", m_name, optval);
         }
     }
 
     const char *TcpConnection::stateToString() const
     {
-        switch (m_state)
+        switch (m_state.load())
         {
         case StateE::kDisconnected:
             return "kDisconnected";
@@ -232,7 +239,7 @@ namespace net
         bool faultErrno = false;
 
         // 之前调过该connection的shutdown，不能再进行发送了
-        if (m_state == StateE::kDisconnected)
+        if (m_state.load() == StateE::kDisconnected)
         {
             NET_LOG_ERROR("disconnected, give up writing");
             return;
@@ -298,7 +305,7 @@ namespace net
 
     void TcpConnection::forceClose()
     {
-        if (m_state == StateE::kConnected || m_state == StateE::kDisconnecting)
+        if (m_state.load() == StateE::kConnected || m_state.load() == StateE::kDisconnecting)
         {
             setState(StateE::kDisconnecting);
             m_loop->queueInLoop(std::bind(&TcpConnection::forceCloseInLoop, shared_from_this()));
@@ -308,7 +315,7 @@ namespace net
     void TcpConnection::forceCloseInLoop()
     {
         m_loop->assertInLoopThread();
-        if (m_state == StateE::kConnected || m_state == StateE::kDisconnecting)
+        if (m_state.load() == StateE::kConnected || m_state.load() == StateE::kDisconnecting)
         {
             handleClose();
         }
